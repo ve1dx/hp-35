@@ -6,7 +6,8 @@ import sys
 
 def show_display():
     numeric_display = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    print(numeric_display)
+    minus = '-'
+    print(minus, " ", numeric_display)
 
 
 def python_check():
