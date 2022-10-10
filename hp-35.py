@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import hp_35_data as hpdata
 
 
 def show_display():
+    print(hpdata.display)
     numeric_display = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     minus = '-'
     print(minus, " ", numeric_display)
