@@ -2,14 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import hp_35_data as hpdata
+import hp35data as hpdata
 
 
 def show_display():
     print(hpdata.display)
-    numeric_display = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     minus = '-'
-    print(minus, " ", numeric_display)
+    print(minus, " ", hpdata.numeric_display)
 
 
 def python_check():
