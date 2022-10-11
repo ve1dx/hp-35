@@ -2,13 +2,40 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import hp35data as hpdata
 
 
-def show_display():
-    print(hpdata.display)
-    minus = '-'
-    print(minus, " ", hpdata.numeric_display)
+# import hp35data as hpdata
+
+
+def show_calc(characters):
+    x_sup_y = super_s = "Xʸ"
+    e_sup_x = super_s = "eˣ"
+    root_x = "√x"
+    print("┌--------------------------------------┐")
+    print("|            ", characters, "            |", sep="")
+    print("|______________________________________|")
+    print("|                                      |")
+    print("|   OFF ═ON                            |")
+    print("|                                      |")
+    print("|   ",  x_sup_y, "     log     ln     ", e_sup_x, "    CLR    |", sep="")
+    print("|                                      |")
+    print("|   ", root_x, "     arc    sin    cos    tan    |", sep="")
+    print("|                                      |")
+    print("|   1/x    x⇆y    R↓     STO    RCL    |")
+    print("|                                      |")
+    print("|   ENTER↑       CHS    E EX   CL x    |")
+    print("|                                      |")
+    print("|     -      7        8        9       |")
+    print("|                                      |")
+    print("|     +      4        5        6       |")
+    print("|                                      |")
+    print("|     X      1        2        3       |")
+    print("|                                      |")
+    print("|     ÷      0        ·        𝛑       |")
+    print("|                                      |")
+    print("|______________________________________|")
+    print("|  h/p  H E W L E T T - P A C K A R D  |")
+    print("└--------------------------------------┘")
 
 
 def python_check():
@@ -26,7 +53,8 @@ def python_check():
 def main():
     try:
         python_check()
-        show_display()
+        chars = "-1.23456789-35"
+        show_calc(chars)
     except KeyboardInterrupt:
         print()
         print("Keyboard interrupt by user")
