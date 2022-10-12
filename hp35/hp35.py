@@ -7,10 +7,10 @@ import sys
 # import hp35data as hpdata
 
 
-def show_calc(characters):
-    spaced_chars = ' '.join(characters)
-    x_sup_y = super_s = "Xʸ"
-    e_sup_x = super_s = "eˣ"
+def show_calc(display):
+    spaced_chars = ' '.join(display)
+    x_sup_y = "Xʸ"
+    e_sup_x = "eˣ"
     root_x = "√x"
     print("┌--------------------------------------┐")
     print("|    ", spaced_chars, "       |", sep="")
@@ -18,7 +18,7 @@ def show_calc(characters):
     print("|                                      |")
     print("|   OFF ═ON                            |")
     print("|                                      |")
-    print("|   ",  x_sup_y, "     log     ln     ", e_sup_x, "    CLR    |", sep="")
+    print("|   ", x_sup_y, "     log     ln     ", e_sup_x, "    CLR    |", sep="")
     print("|                                      |")
     print("|   ", root_x, "     arc    sin    cos    tan    |", sep="")
     print("|                                      |")
@@ -51,9 +51,17 @@ def python_check():
         sys.exit(0)
 
 
+def display_key_menu():
+    pass
+
+
+def get_key():
+    pass
+
+
 def main():
+    python_check()
     try:
-        python_check()
         chars = "-1.23456789-35"
         show_calc(chars)
     except KeyboardInterrupt:
