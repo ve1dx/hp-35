@@ -8,11 +8,12 @@ import sys
 
 
 def show_calc(characters):
+    spaced_chars = ' '.join(characters)
     x_sup_y = super_s = "Xʸ"
     e_sup_x = super_s = "eˣ"
     root_x = "√x"
     print("┌--------------------------------------┐")
-    print("|            ", characters, "            |", sep="")
+    print("|    ", spaced_chars, "       |", sep="")
     print("|______________________________________|")
     print("|                                      |")
     print("|   OFF ═ON                            |")
