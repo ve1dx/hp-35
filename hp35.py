@@ -8,18 +8,15 @@ import sys
 
 def show_calc(display):
     spaced_chars = ' '.join(display)
-    x_sup_y = "Xʸ"
-    e_sup_x = "eˣ"
-    root_x = "√x"
     print("┌--------------------------------------┐")
     print("|    ", spaced_chars, "       |", sep="")
     print("|______________________________________|")
     print("|                                      |")
     print("|   OFF ═ON                            |")
     print("|                                      |")
-    print("|   ", x_sup_y, "     log     ln     ", e_sup_x, "    CLR    |", sep="")
+    print("|   Xʸ     log    ln      eˣ    CLR    |")
     print("|                                      |")
-    print("|   ", root_x, "     arc    sin    cos    tan    |", sep="")
+    print("|   √x     arc    sin    cos    tan    |")
     print("|                                      |")
     print("|   1/x    x⇆y    R↓     STO    RCL    |")
     print("|                                      |")
@@ -51,18 +48,48 @@ def python_check():
 
 
 def display_key_menu():
-    pass
+    print("1, 2, 3, 4, 5, 6, 7, 8, 9, 0 or '.'")
+    print("xy for Xʸ, log, ln, ex for eˣ, clr, rx for √x, arc, sin, cos, tan")
+    print("e for ENTER↑, CHS, eex, clx or off to to turn calculator off")
 
 
-def get_key():
-    pass
+def get_key(choice):
+    l1 = ['xy', 'log', 'ln', 'ex', 'clr', 'rx', 'arc', 'sin', 'cos', 'tan',
+          'e', 'chs', 'eex', 'clx', 'off']
+    legal_key = False
+    while not legal_key:
+        choice = input('> ')
+        a_number = choice.isnumeric()
+        decimal_point = choice.find(".") != -1
+        if a_number or decimal_point:
+            number = True
+        else:
+            number = False
+        legal_key = choice in l1 or number
+        print('choice, legal_key, a_number, decimal_point, number =', choice, legal_key, a_number,
+              decimal_point, number)
+    return str(choice), number
 
 
 def main():
     python_check()
     try:
-        chars = "-1.23456789-35"
+        chars = "0.            "
         show_calc(chars)
+        key = ''
+        while True:
+            display_key_menu()
+            key, a_number = get_key(key)
+            if key == 'off':
+                chars = "-1.23456789-35"
+                show_calc(chars)
+                return
+            if key == a_number:
+                if key.find(".") == -1:
+                    key = key + '.'
+            chars = f"{key:<14}"
+            print(chars)
+            show_calc(chars)
     except KeyboardInterrupt:
         print()
         print("Keyboard interrupt by user")
