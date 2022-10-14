@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import sys
@@ -6,13 +6,34 @@ import sys
 import hp35data as hpdata
 
 
-def show_calc(display):
-    spaced_chars = ' '.join(display)
+def show_calc(display, off):
+    led_display = str(display)
+    #
+    # There are only 15 7-segment led characters
+    #
+    led_display = led_display[:15]
+    #
+    # When the calculator off, technically the
+    # display should be blank.  However, HP's original promotion
+    # shows the digits -1.234567809-35, so we display that even
+    # with the display off.
+    #
+    if off:
+        led_display = '-1.234567809-35'
+    #
+    # Double space characters to make them
+    # look more like the original LED display
+    #
+    spaced_chars = ' '.join(led_display)
     print("┌--------------------------------------┐")
-    print("|    ", spaced_chars, "       |", sep="")
+    print("|   ", spaced_chars, "      |", sep="")
     print("|______________________________________|")
     print("|                                      |")
-    print("|   OFF ═ON                            |")
+    #
+    if off:
+        print("|   OFF═ ON                            |")
+    else:
+        print("|   OFF ═ON                            |")
     print("|                                      |")
     print("|   Xʸ     log    ln      eˣ    CLR    |")
     print("|                                      |")
@@ -40,7 +61,7 @@ def python_check():
     version_minor = sys.version_info[1]
     version_micro = sys.version_info[2]
     if not (version_major == 3 and version_minor >= 5):
-        print("Python verson 3.5 or higher required to run wee_trend. This system is running Python version ",
+        print("Python verson 3.5 or higher required to run hp35. This system is running Python version ",
               version_major, ".", version_minor, ".", version_micro, sep="")
         print()
         print("Exiting program.")
@@ -48,9 +69,13 @@ def python_check():
 
 
 def display_key_menu():
-    print("1, 2, 3, 4, 5, 6, 7, 8, 9, 0 or '.'")
-    print("xy for Xʸ, log, ln, ex for eˣ, clr, rx for √x, arc, sin, cos, tan")
-    print("e for ENTER↑, CHS, eex, clx or off to to turn calculator off")
+    print()
+    print("1, 2, 3, 4, 5, 6, 7, 8, 9, 0, '.', xy for Xʸ log")
+    print("ln, ex for eˣ, clr, rx for √x, arc, sin, cos, tan")
+    print("e for ENTER↑, CHS, eex, clx")
+    print()
+    print("'off' to to turn calculator off")
+    print()
 
 
 def is_number(n):
@@ -70,8 +95,8 @@ def get_key(choice):
         choice = input('> ')
         choice = str(choice)
         if choice == 'off':
-            chars = "-1.23456789-35"
-            show_calc(chars)
+            chars = ''
+            show_calc(chars, True)
             sys.exit(0)
         test = choice
         a_number = is_number(test)
@@ -82,7 +107,7 @@ def get_key(choice):
                 choice = choice + '.'
         legal_key = choice in hpdata.key_list or a_number
         if not legal_key:
-            print("Illegal key")
+            print("Invalid entry")
             print()
     return choice, a_number
 
@@ -90,15 +115,14 @@ def get_key(choice):
 def main():
     python_check()
     try:
-        chars = "0.            "
-        show_calc(chars)
+        chars = "0.             "
+        show_calc(chars, False)
         key = ''
         while True:
             display_key_menu()
             key, a_number = get_key(key)
-            chars = f"{key:<14}"
-            print(chars)
-            show_calc(chars)
+            chars = f"{key:<15}"
+            show_calc(chars, False)
     except KeyboardInterrupt:
         print()
         print("Keyboard interrupt by user")
