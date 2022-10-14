@@ -13,13 +13,10 @@ def show_calc(display, off):
     #
     led_display = led_display[:15]
     #
-    # When the calculator off, technically the
-    # display should be blank.  However, HP's original promotion
-    # shows the digits -1.234567809-35, so we display that even
-    # with the display off.
+    # When the calculator off, the display should be blank.
     #
     if off:
-        led_display = '-1.234567809-35'
+        led_display = '               '
     #
     # Double space characters to make them
     # look more like the original LED display
@@ -70,11 +67,15 @@ def python_check():
 
 def display_key_menu():
     print()
-    print("1, 2, 3, 4, 5, 6, 7, 8, 9, 0, '.', xy for Xʸ log")
-    print("ln, ex for eˣ, clr, rx for √x, arc, sin, cos, tan")
-    print("e for ENTER↑, CHS, eex, clx")
-    print()
-    print("'off' to to turn calculator off")
+    print('off   on')
+    print('xy', '   log', '   ln', '  ex', '  clr')
+    print('rx', '   arc', '   sin', ' cos', ' tan')
+    print('1x', '   rv', '    dn', '  sto', ' rcl')
+    print('e(nter)', '     chs', ' eex', ' clx')
+    print('-', '      7', '      8', '     9')
+    print('+', '      4', '      5', '     6')
+    print('x', '      1', '      2', '     3')
+    print('/', '      0', '      .', '    pi')
     print()
 
 
@@ -98,6 +99,10 @@ def get_key(choice):
             chars = ''
             show_calc(chars, True)
             sys.exit(0)
+        if choice == 'pi':
+            choice = '3.141592654    '
+            a_number = True
+            break
         test = choice
         a_number = is_number(test)
         if a_number:
@@ -122,6 +127,8 @@ def main():
             display_key_menu()
             key, a_number = get_key(key)
             chars = f"{key:<15}"
+            if key == 'clr':
+                chars = "0.             "
             show_calc(chars, False)
     except KeyboardInterrupt:
         print()

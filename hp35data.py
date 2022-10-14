@@ -1,6 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-key_list = \
-    ['xy', 'log', 'ln', 'ex', 'clr', 'rx', 'arc', 'sin', 'cos', 'tan',
-     'e', 'chs', 'eex', 'clx', 'off']
+key_list = ['off',
+            'xy', 'log', 'ln', 'ex', 'clr',
+            'rx', 'arc', 'sin', 'cos', 'tan',
+            '1x', 'rv', 'dn', 'sto', 'rcl',
+            'e', 'chs', 'eex', 'clx',
+            '-', '7', '8', '9',
+            '+', '4', '5', '6',
+            'x', '1', '2', '3',
+            '/', '0', '.', 'pi', ]
