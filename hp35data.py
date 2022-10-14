@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-
-numeric_display = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+key_list = \
+    ['xy', 'log', 'ln', 'ex', 'clr', 'rx', 'arc', 'sin', 'cos', 'tan',
+     'e', 'chs', 'eex', 'clx', 'off']

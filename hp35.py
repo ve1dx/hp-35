@@ -3,8 +3,8 @@
 
 import sys
 
+import hp35data as hpdata
 
-# import hp35data as hpdata
 
 def show_calc(display):
     spaced_chars = ' '.join(display)
@@ -53,22 +53,38 @@ def display_key_menu():
     print("e for ENTER↑, CHS, eex, clx or off to to turn calculator off")
 
 
+def is_number(n):
+    try:
+        float(n)  # Type-casting the string to `float`.
+        # If string is not a valid `float`,
+        # it'll raise `ValueError` exception
+    except ValueError:
+        return False
+    return True
+
+
 def get_key(choice):
-    l1 = ['xy', 'log', 'ln', 'ex', 'clr', 'rx', 'arc', 'sin', 'cos', 'tan',
-          'e', 'chs', 'eex', 'clx', 'off']
     legal_key = False
+    a_number = False
     while not legal_key:
         choice = input('> ')
-        a_number = choice.isnumeric()
-        decimal_point = choice.find(".") != -1
-        if a_number or decimal_point:
-            number = True
-        else:
-            number = False
-        legal_key = choice in l1 or number
-        print('choice, legal_key, a_number, decimal_point, number =', choice, legal_key, a_number,
-              decimal_point, number)
-    return str(choice), number
+        choice = str(choice)
+        if choice == 'off':
+            chars = "-1.23456789-35"
+            show_calc(chars)
+            sys.exit(0)
+        test = choice
+        a_number = is_number(test)
+        if a_number:
+            if '.' in choice and choice[-1] != '.':
+                pass
+            else:
+                choice = choice + '.'
+        legal_key = choice in hpdata.key_list or a_number
+        if not legal_key:
+            print("Illegal key")
+            print()
+    return choice, a_number
 
 
 def main():
@@ -80,13 +96,6 @@ def main():
         while True:
             display_key_menu()
             key, a_number = get_key(key)
-            if key == 'off':
-                chars = "-1.23456789-35"
-                show_calc(chars)
-                return
-            if key == a_number:
-                if key.find(".") == -1:
-                    key = key + '.'
             chars = f"{key:<14}"
             print(chars)
             show_calc(chars)
