@@ -117,6 +117,11 @@ def get_key(choice):
     return choice, a_number
 
 
+def process_action_keys(key):
+    action = key
+    pass
+
+
 def main():
     python_check()
     try:
