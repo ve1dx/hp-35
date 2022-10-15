@@ -134,20 +134,41 @@ def clear_stack(stack):
     return new_stack
 
 
-def process_action_keys(key, stack):
+def mem_func(mem, stack, action):
+    if action == 'sto':
+        mem = stack["X"]
+        return mem, stack
+    elif action == 'rcl':
+        stack["X"] = mem
+        return mem, stack
+    elif action == 'clr':
+        mem = float(0.0)
+        return mem, stack
+
+
+def process_action_keys(key, stack, mem):
     action = key
     current_stack = stack
-    print(current_stack.values())
     if action == 'clr':
-        # Will need to clear the stack, etc.
         chars = "0.             "
         stack = clear_stack(stack)
-        return chars, stack, True
-    elif action == 'on':
-        print("HP-35 is already on")
+        mem, stack = mem_func(mem, stack, action)
+        return chars, stack, mem, True
     elif action == 'e':
         stack = push_stack(current_stack)
-        return action, stack, False
+        return action, stack, mem, True
+    elif action == 'sto':
+        mem, stack = mem_func(mem, stack, action)
+        return action, stack, mem, True
+    elif action == 'rcl':
+        mem, stack = mem_func(mem, stack, action)
+        return action, stack, mem, True
+    elif action == 'clx':
+        stack["X"] = float(0.0)
+        return action, stack, mem, True
+    elif action == 'on':
+        print("HP-35 is already on")
+        return action, stack, mem, False
     pass
 
 
@@ -159,7 +180,7 @@ def main():
              "Y": 0.0,
              "X": 0.0}
     stack = clear_stack(stack)
-    print(stack.values())
+    mem = float(0.0)
     try:
         chars = "0.             "
         existing_display = chars
@@ -169,8 +190,7 @@ def main():
             display_key_menu()
             key, a_number = get_key(key)
             if not a_number:
-                new_display, stack, need_update = process_action_keys(key, stack)
-                print(stack.values())
+                new_display, stack, mem, need_update = process_action_keys(key, stack, mem)
                 if need_update:
                     show_calc(new_display, False)
                 else:
@@ -181,6 +201,8 @@ def main():
                 numeric_chars = f"{key:<15}"
                 show_calc(numeric_chars, False)
                 existing_display = numeric_chars
+            print('stack =', stack.values())
+            print('mem =', mem)
     except KeyboardInterrupt:
         print()
         print("Keyboard interrupt by user")
