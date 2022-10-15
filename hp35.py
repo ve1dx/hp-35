@@ -116,9 +116,14 @@ def get_key(choice):
             print()
     return choice, a_number
 
+def push_stack(stack):
+    new_stack = stack
+    
 
-def process_action_keys(key):
+def process_action_keys(key, stack):
     action = key
+    current_stack = stack.values()
+    print(current_stack)
     if action == 'clr':
         # Will need to clear stack, etc.
         chars = "0.             "
@@ -131,7 +136,11 @@ def process_action_keys(key):
 
 def main():
     python_check()
-    # Define initial stack
+    # Define operational stack
+    stack = {"T": 0.0,
+             "Z": 0.0,
+             "Y": 0.0,
+             "X": 0.0}
     try:
         chars = "0.             "
         existing_display = chars
@@ -141,12 +150,14 @@ def main():
             display_key_menu()
             key, a_number = get_key(key)
             if not a_number:
-                new_display, need_update = process_action_keys(key)
+                new_display, need_update = process_action_keys(key, stack)
                 if need_update:
                     show_calc(new_display, False)
                 else:
                     show_calc(existing_display, False)
             else:
+                stack["X"] = float(key)
+                print(stack.values())
                 numeric_chars = f"{key:<15}"
                 show_calc(numeric_chars, False)
                 existing_display = numeric_chars
