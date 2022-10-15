@@ -116,21 +116,38 @@ def get_key(choice):
             print()
     return choice, a_number
 
+
 def push_stack(stack):
     new_stack = stack
-    
+    new_stack["T"] = new_stack["Z"]
+    new_stack["Z"] = new_stack["Y"]
+    new_stack["Y"] = new_stack["X"]
+    return new_stack
+
+
+def clear_stack(stack):
+    new_stack = stack
+    new_stack["T"] = float(0.0)
+    new_stack["Z"] = float(0.0)
+    new_stack["Y"] = float(0.0)
+    new_stack["X"] = float(0.0)
+    return new_stack
+
 
 def process_action_keys(key, stack):
     action = key
-    current_stack = stack.values()
-    print(current_stack)
+    current_stack = stack
+    print(current_stack.values())
     if action == 'clr':
-        # Will need to clear stack, etc.
+        # Will need to clear the stack, etc.
         chars = "0.             "
-        return chars, True
+        stack = clear_stack(stack)
+        return chars, stack, True
     elif action == 'on':
         print("HP-35 is already on")
-        return action, False
+    elif action == 'e':
+        stack = push_stack(current_stack)
+        return action, stack, False
     pass
 
 
@@ -141,6 +158,8 @@ def main():
              "Z": 0.0,
              "Y": 0.0,
              "X": 0.0}
+    stack = clear_stack(stack)
+    print(stack.values())
     try:
         chars = "0.             "
         existing_display = chars
@@ -150,7 +169,8 @@ def main():
             display_key_menu()
             key, a_number = get_key(key)
             if not a_number:
-                new_display, need_update = process_action_keys(key, stack)
+                new_display, stack, need_update = process_action_keys(key, stack)
+                print(stack.values())
                 if need_update:
                     show_calc(new_display, False)
                 else:
