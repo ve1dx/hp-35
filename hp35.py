@@ -119,22 +119,37 @@ def get_key(choice):
 
 def process_action_keys(key):
     action = key
+    if action == 'clr':
+        # Will need to clear stack, etc.
+        chars = "0.             "
+        return chars, True
+    elif action == 'on':
+        print("HP-35 is already on")
+        return action, False
     pass
 
 
 def main():
     python_check()
+    # Define initial stack
     try:
         chars = "0.             "
+        existing_display = chars
         show_calc(chars, False)
         key = ''
         while True:
             display_key_menu()
             key, a_number = get_key(key)
-            chars = f"{key:<15}"
-            if key == 'clr':
-                chars = "0.             "
-            show_calc(chars, False)
+            if not a_number:
+                new_display, need_update = process_action_keys(key)
+                if need_update:
+                    show_calc(new_display, False)
+                else:
+                    show_calc(existing_display, False)
+            else:
+                numeric_chars = f"{key:<15}"
+                show_calc(numeric_chars, False)
+                existing_display = numeric_chars
     except KeyboardInterrupt:
         print()
         print("Keyboard interrupt by user")
