@@ -67,7 +67,7 @@ def python_check():
 
 def display_key_menu():
     print()
-    print('off   on')
+    print('off  on')
     print('xy', '   log', '   ln', '  ex', '  clr')
     print('rx', '   arc', '   sin', ' cos', ' tan')
     print('1x', '   rv', '    dn', '  sto', ' rcl')
@@ -98,7 +98,7 @@ def get_key(choice):
         if choice == 'off':
             chars = ''
             show_calc(chars, True)
-            sys.exit(0)
+            sys.exit('HP-35 powering off')
         if choice == 'pi':
             choice = '3.141592654    '
             a_number = True
@@ -114,6 +114,10 @@ def get_key(choice):
         if not legal_key:
             print("Invalid entry")
             print()
+        if choice == 'on':
+            print("Calculator is already on.")
+            print()
+            legal_key = False
     return choice, a_number
 
 
@@ -166,9 +170,6 @@ def process_action_keys(key, stack, mem):
     elif action == 'clx':
         stack["X"] = float(0.0)
         return action, stack, mem, True
-    elif action == 'on':
-        print("HP-35 is already on")
-        return action, stack, mem, False
     pass
 
 
