@@ -2,20 +2,79 @@
 # -*- coding: utf-8 -*-
 
 import sys
-
+import numpy as np
 import hp35data as hpdata
 
 
+def convert_to_scientific_notation(float_number):
+    # Work on a copy because Python passes by reference
+    number = float_number
+    #
+    # The HP-35 uses scientific notation if the number is not between
+    # 0.01 (10⁻² and 1000000000 which is 10 billion or 10¹⁰.)  It has 9
+    # digits of precision.
+    # There some 'oddities' given the 1972 technology and design. The display
+    # is limited to 15 LED characters and the first one is blank or a - sign
+    # depending on the sign of the number. It also doesn't display an E or e,
+    # but rather a space or a minus sign in LED location 13, indicating a
+    # big or small number. It's overall display range is between
+    #  9.999999999 99 and -9.999999999 99 (each is 15 digits.)  If the
+    # exponential notation number has 'trailing 0s' we have to remove them:
+    # e.g. 1.004500000 25 becomes 1.0045      25, and  1.000000000 55 becomes
+    #  1.          55.                                123456789112345
+    #  123456789112345
+    # We have to take a Python float and convert it to a display string to
+    # fit the above rules.
+    #
+    if number == 0.0:
+        str_number = str(number)
+        positive = True
+        return str_number, positive
+    positive = number >= 0.0
+    number = abs(number)
+    lo = 0.01
+    hi = 1000000000.0
+    # If it's in the scientific notation range, apply the rules above, otherwise
+    # just return it "as is"
+    in_range = min(lo, hi) < number < max(lo, hi)
+    if not in_range:
+        s_number = str(np.format_float_scientific(number, exp_digits=2, unique=False, precision=9))
+        # Convert string to a list, so we can get at the characters
+        sl = list(s_number)
+        if positive:
+            sl.insert(0, ' ')
+        else:
+            sl.insert(0, '-')
+        # Remove the e and replace the + with a space if number is big or
+        # with a - sign if the number is small.
+        sl[12] = ''
+        if max(lo, hi) < number:
+            sl[13] = ' '
+        else:
+            sl[13] = '-'
+        # Now deal with trailing zeros in the mantissa
+        loc = 11
+        while sl[loc] == '0':
+            sl[loc] = ' '
+            loc -= 1
+        # Convert back into a string
+        s_number = "".join(sl)
+    else:
+        s_number = str(number)
+    return s_number, positive
+
+
 def show_calc(display, off):
-    led_display = str(display)
-    #
-    # There are only 15 7-segment led characters
-    #
-    led_display = led_display[:15]
+    if not off:
+        number = float(display)
+        led_display, positive = convert_to_scientific_notation(number)
+        if not positive:
+            led_display = '-' + led_display
+        led_display = led_display.ljust(15, ' ')
     #
     # When the calculator off, the display should be blank.
     #
-    if off:
+    else:
         led_display = '               '
     #
     # Double space characters to make them
@@ -98,7 +157,7 @@ def get_key(choice):
         if choice == 'off':
             chars = ''
             show_calc(chars, True)
-            sys.exit('HP-35 powering off')
+            sys.exit(0)
         if choice == 'pi':
             choice = '3.141592654    '
             a_number = True
