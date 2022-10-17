@@ -9,10 +9,12 @@ import hp35data as hpdata
 def convert_to_scientific_notation(float_number):
     # Work on a copy because Python passes by reference
     number = float_number
+    snot = True  # Assume we'll convert to scientific notation
     #
     # The HP-35 uses scientific notation if the number is not between
     # 0.01 (10⁻² and 1000000000 which is 10 billion or 10¹⁰.)  It has 9
     # digits of precision.
+    #
     # There some 'oddities' given the 1972 technology and design. The display
     # is limited to 15 LED characters and the first one is blank or a - sign
     # depending on the sign of the number. It also doesn't display an E or e,
@@ -21,15 +23,18 @@ def convert_to_scientific_notation(float_number):
     #  9.999999999 99 and -9.999999999 99 (each is 15 digits.)  If the
     # exponential notation number has 'trailing 0s' we have to remove them:
     # e.g. 1.004500000 25 becomes 1.0045      25, and  1.000000000 55 becomes
-    #  1.          55.                                123456789112345
-    #  123456789112345
+    #  1.          55.  Finally, if there is no scientific notation required,
+    # the HP-35 doesn't display trailing zeros on any numbers.
+    #
     # We have to take a Python float and convert it to a display string to
     # fit the above rules.
     #
     if number == 0.0:
         str_number = str(number)
+        #       str_number = str_number.rstrip("0")
         positive = True
-        return str_number, positive
+        snot = False
+        return str_number, positive, snot
     positive = number >= 0.0
     number = abs(number)
     lo = 0.01
@@ -60,22 +65,28 @@ def convert_to_scientific_notation(float_number):
         # Convert back into a string
         s_number = "".join(sl)
     else:
+        snot = False
         s_number = str(number)
-    return s_number, positive
+    #    s_number = s_number.rstrip("0")
+    return s_number, positive, snot
 
 
-def show_calc(display, off):
-    if not off:
+def show_calc(display, valid_number, off):
+    if valid_number:
         number = float(display)
-        led_display, positive = convert_to_scientific_notation(number)
+        led_display, positive, snot = convert_to_scientific_notation(number)
         if not positive:
             led_display = '-' + led_display
+        if not snot:
+            led_display = led_display.rstrip("0")
         led_display = led_display.ljust(15, ' ')
     #
     # When the calculator off, the display should be blank.
     #
-    else:
+    elif off:
         led_display = '               '
+    else:
+        led_display = display.ljust(15, ' ')
     #
     # Double space characters to make them
     # look more like the original LED display
@@ -129,7 +140,7 @@ def display_key_menu():
     print('off  on')
     print('xy', '   log', '   ln', '  ex', '  clr')
     print('rx', '   arc', '   sin', ' cos', ' tan')
-    print('1x', '   rv', '    dn', '  sto', ' rcl')
+    print('1x', '   rv', '    rd', '  sto', ' rcl')
     print('e(nter)', '     chs', ' eex', ' clx')
     print('-', '      7', '      8', '     9')
     print('+', '      4', '      5', '     6')
@@ -140,9 +151,17 @@ def display_key_menu():
 
 def is_number(n):
     try:
-        float(n)  # Type-casting the string to `float`.
-        # If string is not a valid `float`,
-        # it'll raise `ValueError` exception
+        flt_n = float(n)
+        #
+        # Type cast the string to 'float'. If string is not a valid 'float',
+        # it'll raise 'ValueError' exception. One other check: The HP-35
+        # doesn't allo the entry of -ve numbers. The - sign is part of the RPN.
+        # It uses CH S (chs) to convert entries to -ve. Thus, in this context
+        # -ve numbers are considered invalid, so we check for that even if the
+        # number passes the type cast.
+        #
+        if flt_n < 0.0:
+            return False
     except ValueError:
         return False
     return True
@@ -154,10 +173,6 @@ def get_key(choice):
     while not legal_key:
         choice = input('> ')
         choice = str(choice)
-        if choice == 'off':
-            chars = ''
-            show_calc(chars, True)
-            sys.exit(0)
         if choice == 'pi':
             choice = '3.141592654    '
             a_number = True
@@ -173,11 +188,15 @@ def get_key(choice):
         if not legal_key:
             print("Invalid entry")
             print()
-        if choice == 'on':
-            print("Calculator is already on.")
-            print()
-            legal_key = False
     return choice, a_number
+
+
+def reverse_xy(stack):
+    new_stack = stack
+    temp = new_stack["Y"]
+    new_stack["Y"] = new_stack["X"]
+    new_stack["X"] = temp
+    return new_stack
 
 
 def push_stack(stack):
@@ -185,6 +204,16 @@ def push_stack(stack):
     new_stack["T"] = new_stack["Z"]
     new_stack["Z"] = new_stack["Y"]
     new_stack["Y"] = new_stack["X"]
+    return new_stack
+
+
+def rotate_stack(stack):
+    new_stack = stack
+    temp = new_stack["X"]
+    new_stack["X"] = new_stack["Y"]
+    new_stack["Y"] = new_stack["Z"]
+    new_stack["Z"] = new_stack["T"]
+    new_stack["T"] = temp
     return new_stack
 
 
@@ -209,27 +238,60 @@ def mem_func(mem, stack, action):
         return mem, stack
 
 
+def dump_zeros(stack):
+    chars = str(stack["X"])
+    chars = chars.rstrip("0")
+    return chars
+
+
 def process_action_keys(key, stack, mem):
     action = key
     current_stack = stack
-    if action == 'clr':
+    #
+    # First the memory/stack/clr, etc., keys
+    #
+    if action == 'off':
+        chars = ''
+        show_calc(chars, False, True)
+        sys.exit('HP-35 is powering down')
+    if action == 'on':
+        print("Calculator is already on.")
+        print()
+        return key, stack, mem, False
+    elif action == 'clr':
         chars = "0.             "
         stack = clear_stack(stack)
+        dump_zeros(stack)
         mem, stack = mem_func(mem, stack, action)
         return chars, stack, mem, True
     elif action == 'e':
         stack = push_stack(current_stack)
-        return action, stack, mem, True
+        chars = dump_zeros(stack)
+        return chars, stack, mem, True
+    elif action == 'rd':
+        stack = rotate_stack(current_stack)
+        chars = dump_zeros(stack)
+        return chars, stack, mem, True
+    elif action == 'rv':
+        stack = reverse_xy(current_stack)
+        chars = dump_zeros(stack)
+        return chars, stack, mem, True
     elif action == 'sto':
         mem, stack = mem_func(mem, stack, action)
-        return action, stack, mem, True
+        chars = dump_zeros(stack)
+        return chars, stack, mem, True
     elif action == 'rcl':
         mem, stack = mem_func(mem, stack, action)
-        return action, stack, mem, True
+        chars = dump_zeros(stack)
+        return chars, stack, mem, True
     elif action == 'clx':
         stack["X"] = float(0.0)
-        return action, stack, mem, True
-    pass
+        chars = dump_zeros(stack)
+        return chars, stack, mem, True
+    elif action == 'chs':
+        stack["X"] = stack["X"] * -1.0
+        chars = dump_zeros(stack)
+        return chars, stack, mem, True
 
 
 def main():
@@ -244,7 +306,8 @@ def main():
     try:
         chars = "0.             "
         existing_display = chars
-        show_calc(chars, False)
+        a_number = True
+        show_calc(chars, a_number, False)
         key = ''
         while True:
             display_key_menu()
@@ -252,14 +315,13 @@ def main():
             if not a_number:
                 new_display, stack, mem, need_update = process_action_keys(key, stack, mem)
                 if need_update:
-                    show_calc(new_display, False)
+                    show_calc(new_display, a_number, False)
                 else:
-                    show_calc(existing_display, False)
+                    show_calc(existing_display, a_number, False)
             else:
                 stack["X"] = float(key)
-                print(stack.values())
                 numeric_chars = f"{key:<15}"
-                show_calc(numeric_chars, False)
+                show_calc(numeric_chars, a_number, False)
                 existing_display = numeric_chars
             print('stack =', stack.values())
             print('mem =', mem)
