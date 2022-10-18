@@ -3,10 +3,11 @@
 
 import sys
 import numpy as np
+import getch
 import hp35data as hpdata
 
 
-def convert_to_scientific_notation(float_number):
+def hp35_scientific_notation(float_number):
     # Work on a copy because Python passes by reference
     number = float_number
     snot = True  # Assume we'll convert to scientific notation
@@ -31,7 +32,6 @@ def convert_to_scientific_notation(float_number):
     #
     if number == 0.0:
         str_number = str(number)
-        #       str_number = str_number.rstrip("0")
         positive = True
         snot = False
         return str_number, positive, snot
@@ -74,7 +74,7 @@ def convert_to_scientific_notation(float_number):
 def show_calc(display, valid_number, off):
     if valid_number:
         number = float(display)
-        led_display, positive, snot = convert_to_scientific_notation(number)
+        led_display, positive, snot = hp35_scientific_notation(number)
         if not positive:
             led_display = '-' + led_display
         if not snot:
@@ -151,7 +151,6 @@ def display_key_menu():
 
 def is_number(n):
     try:
-        flt_n = float(n)
         #
         # Type cast the string to 'float'. If string is not a valid 'float',
         # it'll raise 'ValueError' exception. One other check: The HP-35
@@ -160,14 +159,13 @@ def is_number(n):
         # -ve numbers are considered invalid, so we check for that even if the
         # number passes the type cast.
         #
-        if flt_n < 0.0:
-            return False
+        flt_n = float(n)
     except ValueError:
         return False
     return True
 
 
-def get_key(choice):
+def get_cmd(choice):
     legal_key = False
     a_number = False
     while not legal_key:
@@ -177,8 +175,7 @@ def get_key(choice):
             choice = '3.141592654    '
             a_number = True
             break
-        test = choice
-        a_number = is_number(test)
+        a_number = is_number(choice)
         if a_number:
             if '.' in choice and choice[-1] != '.':
                 pass
@@ -192,38 +189,34 @@ def get_key(choice):
 
 
 def reverse_xy(stack):
-    new_stack = stack
-    temp = new_stack["Y"]
-    new_stack["Y"] = new_stack["X"]
-    new_stack["X"] = temp
-    return new_stack
+    temp = stack["Y"]
+    stack["Y"] = stack["X"]
+    stack["X"] = temp
+    return stack
 
 
 def push_stack(stack):
-    new_stack = stack
-    new_stack["T"] = new_stack["Z"]
-    new_stack["Z"] = new_stack["Y"]
-    new_stack["Y"] = new_stack["X"]
-    return new_stack
+    stack["T"] = stack["Z"]
+    stack["Z"] = stack["Y"]
+    stack["Y"] = stack["X"]
+    return stack
 
 
 def rotate_stack(stack):
-    new_stack = stack
-    temp = new_stack["X"]
-    new_stack["X"] = new_stack["Y"]
-    new_stack["Y"] = new_stack["Z"]
-    new_stack["Z"] = new_stack["T"]
-    new_stack["T"] = temp
-    return new_stack
+    temp = stack["X"]
+    stack["X"] = stack["Y"]
+    stack["Y"] = stack["Z"]
+    stack["Z"] = stack["T"]
+    stack["T"] = temp
+    return stack
 
 
 def clear_stack(stack):
-    new_stack = stack
-    new_stack["T"] = float(0.0)
-    new_stack["Z"] = float(0.0)
-    new_stack["Y"] = float(0.0)
-    new_stack["X"] = float(0.0)
-    return new_stack
+    stack["T"] = float(0.0)
+    stack["Z"] = float(0.0)
+    stack["Y"] = float(0.0)
+    stack["X"] = float(0.0)
+    return stack
 
 
 def mem_func(mem, stack, action):
@@ -244,63 +237,80 @@ def dump_zeros(stack):
     return chars
 
 
-def process_action_keys(key, stack, mem):
-    action = key
-    current_stack = stack
+def process_action_keys(cmd, stack, mem):
     #
     # First the memory/stack/clr, etc., keys
     #
-    if action == 'off':
+    if cmd == 'off':
         chars = ''
         show_calc(chars, False, True)
         sys.exit('HP-35 is powering down')
-    if action == 'on':
+    if cmd == 'on':
         print("Calculator is already on.")
         print()
-        return key, stack, mem, False
-    elif action == 'clr':
+        return cmd, stack, mem, False
+    elif cmd == 'clr':
         chars = "0.             "
         stack = clear_stack(stack)
         dump_zeros(stack)
-        mem, stack = mem_func(mem, stack, action)
+        mem, stack = mem_func(mem, stack, cmd)
         return chars, stack, mem, True
-    elif action == 'e':
-        stack = push_stack(current_stack)
+    elif cmd == 'e':
+        stack = push_stack(stack)
         chars = dump_zeros(stack)
         return chars, stack, mem, True
-    elif action == 'rd':
-        stack = rotate_stack(current_stack)
+    elif cmd == 'rd':
+        stack = rotate_stack(stack)
         chars = dump_zeros(stack)
         return chars, stack, mem, True
-    elif action == 'rv':
-        stack = reverse_xy(current_stack)
+    elif cmd == 'rv':
+        stack = reverse_xy(stack)
         chars = dump_zeros(stack)
         return chars, stack, mem, True
-    elif action == 'sto':
-        mem, stack = mem_func(mem, stack, action)
+    elif cmd == 'sto':
+        mem, stack = mem_func(mem, stack, cmd)
         chars = dump_zeros(stack)
         return chars, stack, mem, True
-    elif action == 'rcl':
-        mem, stack = mem_func(mem, stack, action)
+    elif cmd == 'rcl':
+        mem, stack = mem_func(mem, stack, cmd)
         chars = dump_zeros(stack)
         return chars, stack, mem, True
-    elif action == 'clx':
+    elif cmd == 'clx':
         stack["X"] = float(0.0)
         chars = dump_zeros(stack)
         return chars, stack, mem, True
-    elif action == 'chs':
+
+
+def special_case(cmd, stack):
+    if cmd == 'chs':
         stack["X"] = stack["X"] * -1.0
         chars = dump_zeros(stack)
-        return chars, stack, mem, True
+        return chars, stack, True
+    elif cmd == 'eex':
+        while True:
+            cmd = getch.getch()
+            if cmd == 'x':
+                break
+        chars = dump_zeros(stack)
+        return chars, stack, True
+
+
+def display_registers(mem, stack):
+    print()
+    print('M :', mem)
+    print()
+    for cmd, value in stack.items():
+        print(cmd, ':', value)
 
 
 def main():
     python_check()
-    # Define operational stack
+    # Initialize operational stack
     stack = {"T": 0.0,
              "Z": 0.0,
              "Y": 0.0,
              "X": 0.0}
+    # Clear everything on startup
     stack = clear_stack(stack)
     mem = float(0.0)
     try:
@@ -308,23 +318,26 @@ def main():
         existing_display = chars
         a_number = True
         show_calc(chars, a_number, False)
-        key = ''
+        display_registers(mem, stack)
+        cmd = ''
         while True:
             display_key_menu()
-            key, a_number = get_key(key)
+            cmd, a_number = get_cmd(cmd)
             if not a_number:
-                new_display, stack, mem, need_update = process_action_keys(key, stack, mem)
+                if cmd in ['chs', 'eex']:
+                    new_display, stack, need_update = special_case(cmd, stack)
+                else:
+                    new_display, stack, mem, need_update = process_action_keys(cmd, stack, mem)
                 if need_update:
                     show_calc(new_display, a_number, False)
                 else:
                     show_calc(existing_display, a_number, False)
             else:
-                stack["X"] = float(key)
-                numeric_chars = f"{key:<15}"
+                stack["X"] = float(cmd)
+                numeric_chars = f"{cmd:<15}"
                 show_calc(numeric_chars, a_number, False)
                 existing_display = numeric_chars
-            print('stack =', stack.values())
-            print('mem =', mem)
+            display_registers(mem, stack)
     except KeyboardInterrupt:
         print()
         print("Keyboard interrupt by user")
