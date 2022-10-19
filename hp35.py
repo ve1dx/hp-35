@@ -3,7 +3,8 @@
 
 import sys
 import numpy as np
-import getch
+import time
+from getkey import getkey, keys
 import hp35data as hpdata
 
 
@@ -151,15 +152,9 @@ def display_key_menu():
 
 def is_number(n):
     try:
-        #
-        # Type cast the string to 'float'. If string is not a valid 'float',
-        # it'll raise 'ValueError' exception. One other check: The HP-35
-        # doesn't allo the entry of -ve numbers. The - sign is part of the RPN.
-        # It uses CH S (chs) to convert entries to -ve. Thus, in this context
-        # -ve numbers are considered invalid, so we check for that even if the
-        # number passes the type cast.
-        #
-        flt_n = float(n)
+        float(n)  # Type-casting the string to `float`.
+        # If string is not a valid `float`,
+        # it'll raise `ValueError` exception
     except ValueError:
         return False
     return True
@@ -242,57 +237,118 @@ def process_action_keys(cmd, stack, mem):
     # First the memory/stack/clr, etc., keys
     #
     if cmd == 'off':
-        chars = ''
-        show_calc(chars, False, True)
-        sys.exit('HP-35 is powering down')
+        action_chars = ''
+        show_calc(action_chars, False, True)
+        print('HP-35 is powering down')
+        time.sleep(0.3)  # Time delay for slower systems to allow the display to update before exit
+        sys.exit(0)
     if cmd == 'on':
         print("Calculator is already on.")
         print()
         return cmd, stack, mem, False
     elif cmd == 'clr':
-        chars = "0.             "
+        action_chars = "0.             "
         stack = clear_stack(stack)
         dump_zeros(stack)
         mem, stack = mem_func(mem, stack, cmd)
-        return chars, stack, mem, True
+        return action_chars, stack, mem, True
     elif cmd == 'e':
         stack = push_stack(stack)
-        chars = dump_zeros(stack)
-        return chars, stack, mem, True
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
     elif cmd == 'rd':
         stack = rotate_stack(stack)
-        chars = dump_zeros(stack)
-        return chars, stack, mem, True
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
     elif cmd == 'rv':
         stack = reverse_xy(stack)
-        chars = dump_zeros(stack)
-        return chars, stack, mem, True
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
     elif cmd == 'sto':
         mem, stack = mem_func(mem, stack, cmd)
-        chars = dump_zeros(stack)
-        return chars, stack, mem, True
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
     elif cmd == 'rcl':
         mem, stack = mem_func(mem, stack, cmd)
-        chars = dump_zeros(stack)
-        return chars, stack, mem, True
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
     elif cmd == 'clx':
         stack["X"] = float(0.0)
-        chars = dump_zeros(stack)
-        return chars, stack, mem, True
-
-
-def special_case(cmd, stack):
-    if cmd == 'chs':
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
+    elif cmd == 'chs':
         stack["X"] = stack["X"] * -1.0
-        chars = dump_zeros(stack)
-        return chars, stack, True
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
     elif cmd == 'eex':
+        #
+        # Some complex programming here because of the 1972 technical limitations of the HP-35 and
+        # Python's immutable strings.
+        #
+        # First get the X register and make it scientific notation if it's not between 10⁻² and 10¹⁰
+        #
+        temp = float(stack["X"])
+        led_display, positive, snot = hp35_scientific_notation(temp)
+        if not positive:
+            led_display = '-' + led_display
+        # If it's not scientific notation remove the trailing zeros and
+        # pad it out to 15 'LED' display characters
+        if not snot:
+            led_display = led_display.rstrip("0")
+            led_display = led_display.ljust(15, ' ')
+            # Stick 00s in last two locations in preparation for the entering of the exponent. Temporarily
+            # make it a list to do this.
+        lst = list(led_display)
+        lst[13] = '0'
+        lst[14] = '0'
+        led_display = ''.join(lst)
         while True:
-            cmd = getch.getch()
-            if cmd == 'x':
+            #
+            # Don't display the entire calculator during the 'E EX' function
+            spaced_chars = ' '.join(led_display)
+            print("┌--------------------------------------┐")
+            print("|   ", spaced_chars, "      |", sep="")
+            print("|______________________________________|")
+            print()
+            print('> ')
+            key = getkey()
+            if key == keys.NEW_LINE:
                 break
-        chars = dump_zeros(stack)
-        return chars, stack, True
+            if key != keys.MINUS:
+                lst[13] = lst[14]
+                lst[14] = key
+            #
+            # Use '-' in this situation only to change the sign of the exponent
+            #
+            else:
+                tmp = str(lst[12])
+                if tmp == ' ':
+                    lst[12] = '-'
+                elif tmp == '-':
+                    lst[12] = ' '
+            led_display = ''.join(lst)
+        #
+        # Before updating the display string, convert the mantissa and exponent to a
+        # Python float and put it in the X register.
+        # print statements are just for development/degugging.
+        exp = float(str(lst[12]) + str(lst[13]) + str(lst[14]))
+        print('exp =', exp)
+        mult = 10.0 ** exp
+        print('mult =', mult)
+        mantissa = ''
+        for i in range(0, 10):
+            mantissa = mantissa + str(lst[i])
+        mantissa = float(mantissa)
+        print('mantissa =', mantissa)
+        result = float(mantissa * mult)
+        print('result =', result)
+        stack["X"] = result
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
+    else:
+        print(cmd, 'not yet implemented')
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem, True
 
 
 def display_registers(mem, stack):
@@ -304,6 +360,10 @@ def display_registers(mem, stack):
 
 
 def main():
+    #
+    # Eventually use argparse to determine if we want verbose node to display the
+    # registers and mem locations.  Display them all the time during development.
+    #
     python_check()
     # Initialize operational stack
     stack = {"T": 0.0,
@@ -323,11 +383,14 @@ def main():
         while True:
             display_key_menu()
             cmd, a_number = get_cmd(cmd)
+            print()
             if not a_number:
-                if cmd in ['chs', 'eex']:
-                    new_display, stack, need_update = special_case(cmd, stack)
-                else:
-                    new_display, stack, mem, need_update = process_action_keys(cmd, stack, mem)
+                new_display, stack, mem, need_update = process_action_keys(cmd, stack, mem)
+                #
+                # Need to work on new display if returning from E EX call.  Things
+                # like 4.525e-10 are incorrectly (in HP-35 format, anyhow) as '4 . 5 2 5 e - 1'
+                # when they should be  '4 . 4 2 5               0 9'
+                #
                 if need_update:
                     show_calc(new_display, a_number, False)
                 else:
