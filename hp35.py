@@ -14,7 +14,7 @@ def hp35_scientific_notation(float_number):
     snot = True  # Assume we'll convert to scientific notation
     #
     # The HP-35 uses scientific notation if the number is not between
-    # 0.01 (10⁻² and 1000000000 which is 10 billion or 10¹⁰.)  It has 9
+    # 0.01 (10⁻² and 10,000,000,000 which is 10 billion or 10¹⁰.)  It has 9
     # digits of precision.
     #
     # There some 'oddities' given the 1972 technology and design. The display
@@ -25,7 +25,9 @@ def hp35_scientific_notation(float_number):
     #  9.999999999 99 and -9.999999999 99 (each is 15 digits.)  If the
     # exponential notation number has 'trailing 0s' we have to remove them:
     # e.g. 1.004500000 25 becomes 1.0045      25, and  1.000000000 55 becomes
-    #  1.          55.  Finally, if there is no scientific notation required,
+    #  1.          55.
+    # Also, things like 4.562389e+16 need to be converted to 1.0045       25
+    # Finally, if there is no scientific notation required,
     # the HP-35 doesn't display trailing zeros on any numbers.
     #
     # We have to take a Python float and convert it to a display string to
@@ -44,26 +46,47 @@ def hp35_scientific_notation(float_number):
     # just return it "as is"
     in_range = min(lo, hi) < number < max(lo, hi)
     if not in_range:
+        # Break the number into a mantissa and exponent and make it a string
         s_number = str(np.format_float_scientific(number, exp_digits=2, unique=False, precision=9))
-        # Convert string to a list, so we can get at the characters
+        # Convert string to a list, so we can get at the characters because of Python's immutable strings
+        print(s_number)
+        # Convert to a list (which would be indexed 0-14)
         sl = list(s_number)
+        print('A =   ', sl, flush=True)
+        # Add the sign character at the beginning. This will make the list 15 digits after inserting
+        # a ' ' or a '-' thus it will now be indexed 0-15
         if positive:
             sl.insert(0, ' ')
         else:
             sl.insert(0, '-')
+        # Remove the e+EX or e-EX and replace the + or with a space if number is big or
+        # with a - sign if the number is small. Put the EX 'digits' in the last two places
+        for i in range(0, 13):
+            print('B, sl[i], i =   ', sl, '  ', sl[i], i, flush=True)
+            if sl[i] == 'e':
+                sign_loc = i + 1
+                exp1_loc = i + 2
+                exp2_loc = i + 3
+                sl[i] = ''
+                sl[sign_loc] = ' '
+                sl[14] = sl[exp1_loc]
+                sl[15] = sl[exp2_loc]
+                print('C, i =   ', sl, '  ', i, flush=True)
         # Remove the e and replace the + with a space if number is big or
         # with a - sign if the number is small.
-        sl[12] = ''
+        print('D =   ', sl)
         if max(lo, hi) < number:
             sl[13] = ' '
         else:
             sl[13] = '-'
+        print('E =   ', sl, flush=True)
         # Now deal with trailing zeros in the mantissa
         loc = 11
         while sl[loc] == '0':
             sl[loc] = ' '
             loc -= 1
         # Convert back into a string
+        print('F =   ', sl, flush=True)
         s_number = "".join(sl)
     else:
         snot = False
@@ -277,10 +300,12 @@ def process_action_keys(cmd, stack, mem):
         action_chars = dump_zeros(stack)
         return action_chars, stack, mem, True
     elif cmd == 'chs':
-        stack["X"] = stack["X"] * -1.0
+        temp = float(stack["X"])
+        stack["X"] = temp * -1.0
         action_chars = dump_zeros(stack)
         return action_chars, stack, mem, True
     elif cmd == 'eex':
+        # Probably ought to make this a function once it's finished.
         #
         # Some complex programming here because of the 1972 technical limitations of the HP-35 and
         # Python's immutable strings.
@@ -288,6 +313,8 @@ def process_action_keys(cmd, stack, mem):
         # First get the X register and make it scientific notation if it's not between 10⁻² and 10¹⁰
         #
         temp = float(stack["X"])
+        if temp == 0.0:
+            temp = 1.0
         led_display, positive, snot = hp35_scientific_notation(temp)
         if not positive:
             led_display = '-' + led_display
@@ -386,20 +413,27 @@ def main():
             print()
             if not a_number:
                 new_display, stack, mem, need_update = process_action_keys(cmd, stack, mem)
-                #
-                # Need to work on new display if returning from E EX call.  Things
-                # like 4.525e-10 are incorrectly (in HP-35 format, anyhow) as '4 . 5 2 5 e - 1'
-                # when they should be  '4 . 4 2 5               0 9'
-                #
                 if need_update:
-                    show_calc(new_display, a_number, False)
+                    new_display = float(stack["X"])
+                    show_calc(new_display, True, False)
                 else:
-                    show_calc(existing_display, a_number, False)
+                    existing_display = float(stack["X"])
+                    show_calc(existing_display, True, False)
             else:
-                stack["X"] = float(cmd)
+                lo = 0.01
+                hi = 1000000000.0
+                # If it's in the scientific notation range, apply the rules above, otherwise
+                # just return it "as is"
+                cmd = float(cmd)
+                in_range = min(lo, hi) < cmd < max(lo, hi)
+                if in_range:
+                    stack["X"] = float(cmd)
+                else:
+                    stack["X"] = np.format_float_scientific(float(cmd), exp_digits=2, unique=False, precision=9)
+
                 numeric_chars = f"{cmd:<15}"
+                numeric_chars = float(numeric_chars)
                 show_calc(numeric_chars, a_number, False)
-                existing_display = numeric_chars
             display_registers(mem, stack)
     except KeyboardInterrupt:
         print()
