@@ -11,27 +11,28 @@ import hp35data as hpdata
 def hp35_scientific_notation(float_number):
     # Work on a copy because Python passes by reference
     number = float_number
-    snot = True  # Assume we'll convert to scientific notation
+    # Assume we'll convert to scientific notation
+    snot = True
     #
     # The HP-35 uses scientific notation if the number is not between
     # 0.01 (10⁻² and 10,000,000,000 which is 10 billion or 10¹⁰.)  It has 9
     # digits of precision.
     #
-    # There some 'oddities' given the 1972 technology and design. The display
+    # There some 'oddities' given the 1972 technology and HP-35 design. The display
     # is limited to 15 LED characters and the first one is blank or a - sign
     # depending on the sign of the number. It also doesn't display an E or e,
     # but rather a space or a minus sign in LED location 13, indicating a
     # big or small number. It's overall display range is between
-    #  9.999999999 99 and -9.999999999 99 (each is 15 digits.)  If the
+    # ' 9.999999999 99' and '-9.999999999 99' (each is 15 digits.)  If the
     # exponential notation number has 'trailing 0s' we have to remove them:
-    # e.g. 1.004500000 25 becomes 1.0045      25, and  1.000000000 55 becomes
-    #  1.          55.
-    # Also, things like 4.562389e+16 need to be converted to 1.0045       25
-    # Finally, if there is no scientific notation required,
-    # the HP-35 doesn't display trailing zeros on any numbers.
+    # e.g. 1.004500000 25 becomes ' 1.0045      25', and ' 1.000000000 55' becomes
+    # ' 1.          55'
+    # Also, things like 4.562389e+16 need to be converted to ' 1.0045       25'
+    # Finally, if there is no scientific notation required, the HP-35 doesn't display
+    # trailing zeros on any numbers.
     #
-    # We have to take a Python float and convert it to a display string to
-    # fit the above rules.
+    # This function takes a Python float and converts it to a display string observing
+    # the above rules.
     #
     if number == 0.0:
         str_number = str(number)
@@ -49,10 +50,8 @@ def hp35_scientific_notation(float_number):
         # Break the number into a mantissa and exponent and make it a string
         s_number = str(np.format_float_scientific(number, exp_digits=2, unique=False, precision=9))
         # Convert string to a list, so we can get at the characters because of Python's immutable strings
-        print(s_number)
         # Convert to a list (which would be indexed 0-14)
         sl = list(s_number)
-        print('A =   ', sl, flush=True)
         # Add the sign character at the beginning. This will make the list 15 digits after inserting
         # a ' ' or a '-' thus it will now be indexed 0-15
         if positive:
@@ -62,7 +61,6 @@ def hp35_scientific_notation(float_number):
         # Remove the e+EX or e-EX and replace the + or with a space if number is big or
         # with a - sign if the number is small. Put the EX 'digits' in the last two places
         for i in range(0, 13):
-            print('B, sl[i], i =   ', sl, '  ', sl[i], i, flush=True)
             if sl[i] == 'e':
                 sign_loc = i + 1
                 exp1_loc = i + 2
@@ -71,27 +69,22 @@ def hp35_scientific_notation(float_number):
                 sl[sign_loc] = ' '
                 sl[14] = sl[exp1_loc]
                 sl[15] = sl[exp2_loc]
-                print('C, i =   ', sl, '  ', i, flush=True)
         # Remove the e and replace the + with a space if number is big or
         # with a - sign if the number is small.
-        print('D =   ', sl)
         if max(lo, hi) < number:
             sl[13] = ' '
         else:
             sl[13] = '-'
-        print('E =   ', sl, flush=True)
         # Now deal with trailing zeros in the mantissa
         loc = 11
         while sl[loc] == '0':
             sl[loc] = ' '
             loc -= 1
         # Convert back into a string
-        print('F =   ', sl, flush=True)
         s_number = "".join(sl)
     else:
         snot = False
         s_number = str(number)
-    #    s_number = s_number.rstrip("0")
     return s_number, positive, snot
 
 
@@ -99,7 +92,7 @@ def show_calc(display, valid_number, off):
     if valid_number:
         number = float(display)
         led_display, positive, snot = hp35_scientific_notation(number)
-        if not positive:
+        if not positive and not snot:
             led_display = '-' + led_display
         if not snot:
             led_display = led_display.rstrip("0")
@@ -255,6 +248,73 @@ def dump_zeros(stack):
     return chars
 
 
+def get_exponent(stack, mem):
+    #
+    # Some complex programming here because of the 1972 technical limitations of the HP-35 and
+    # Python's immutable strings.
+    #
+    # First get the X register and make it scientific notation if it's not between 10⁻² and 10¹⁰
+    # Precision of the HP-35 is 9 digits. Python's float might have 'noise' beyond that, so
+    # round off to 9
+    #
+    temp = round(float(stack["X"]), 9)
+    if temp == 0.0:
+        temp = 1.0
+    led_display, positive, snot = hp35_scientific_notation(temp)
+    if not positive:
+        led_display = '-' + led_display
+    # If it's not scientific notation remove the trailing zeros and
+    # pad it out to 15 'LED' display characters
+    if not snot:
+        led_display = led_display.rstrip("0")
+        led_display = led_display.ljust(15, ' ')
+        # Stick 00s in last two locations in preparation for the entering of the exponent. Temporarily
+        # make it a list to do this.
+    lst = list(led_display)
+    lst[13] = '0'
+    lst[14] = '0'
+    led_display = ''.join(lst)
+    while True:
+        #
+        # Don't display the entire calculator during the 'E EX' function
+        spaced_chars = ' '.join(led_display)
+        print("┌--------------------------------------┐")
+        print("|   ", spaced_chars, "      |", sep="")
+        print("|______________________________________|")
+        print()
+        print('> ')
+        key = getkey()
+        if key == keys.NEW_LINE:
+            break
+        if key != keys.MINUS:
+            lst[13] = lst[14]
+            lst[14] = key
+        #
+        # Use '-' in this situation only to change the sign of the exponent
+        #
+        else:
+            tmp = str(lst[12])
+            if tmp == ' ':
+                lst[12] = '-'
+            elif tmp == '-':
+                lst[12] = ' '
+        led_display = ''.join(lst)
+    #
+    # Before updating the display string, convert the mantissa and exponent to a
+    # Python float and put it in the X register.
+    #
+    exp = float(str(lst[12]) + str(lst[13]) + str(lst[14]))
+    mult = 10.0 ** exp
+    mantissa = ''
+    for i in range(0, 10):
+        mantissa = mantissa + str(lst[i])
+    mantissa = float(mantissa)
+    result = float(mantissa * mult)
+    stack["X"] = result
+    action_chars = dump_zeros(stack)
+    return action_chars, stack, mem
+
+
 def process_action_keys(cmd, stack, mem):
     #
     # First the memory/stack/clr, etc., keys
@@ -268,114 +328,51 @@ def process_action_keys(cmd, stack, mem):
     if cmd == 'on':
         print("Calculator is already on.")
         print()
-        return cmd, stack, mem, False
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
     elif cmd == 'clr':
         action_chars = "0.             "
         stack = clear_stack(stack)
         dump_zeros(stack)
         mem, stack = mem_func(mem, stack, cmd)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'e':
         stack = push_stack(stack)
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'rd':
         stack = rotate_stack(stack)
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'rv':
         stack = reverse_xy(stack)
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'sto':
         mem, stack = mem_func(mem, stack, cmd)
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'rcl':
         mem, stack = mem_func(mem, stack, cmd)
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'clx':
         stack["X"] = float(0.0)
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'chs':
         temp = float(stack["X"])
         stack["X"] = temp * -1.0
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
     elif cmd == 'eex':
-        # Probably ought to make this a function once it's finished.
-        #
-        # Some complex programming here because of the 1972 technical limitations of the HP-35 and
-        # Python's immutable strings.
-        #
-        # First get the X register and make it scientific notation if it's not between 10⁻² and 10¹⁰
-        #
-        temp = float(stack["X"])
-        if temp == 0.0:
-            temp = 1.0
-        led_display, positive, snot = hp35_scientific_notation(temp)
-        if not positive:
-            led_display = '-' + led_display
-        # If it's not scientific notation remove the trailing zeros and
-        # pad it out to 15 'LED' display characters
-        if not snot:
-            led_display = led_display.rstrip("0")
-            led_display = led_display.ljust(15, ' ')
-            # Stick 00s in last two locations in preparation for the entering of the exponent. Temporarily
-            # make it a list to do this.
-        lst = list(led_display)
-        lst[13] = '0'
-        lst[14] = '0'
-        led_display = ''.join(lst)
-        while True:
-            #
-            # Don't display the entire calculator during the 'E EX' function
-            spaced_chars = ' '.join(led_display)
-            print("┌--------------------------------------┐")
-            print("|   ", spaced_chars, "      |", sep="")
-            print("|______________________________________|")
-            print()
-            print('> ')
-            key = getkey()
-            if key == keys.NEW_LINE:
-                break
-            if key != keys.MINUS:
-                lst[13] = lst[14]
-                lst[14] = key
-            #
-            # Use '-' in this situation only to change the sign of the exponent
-            #
-            else:
-                tmp = str(lst[12])
-                if tmp == ' ':
-                    lst[12] = '-'
-                elif tmp == '-':
-                    lst[12] = ' '
-            led_display = ''.join(lst)
-        #
-        # Before updating the display string, convert the mantissa and exponent to a
-        # Python float and put it in the X register.
-        # print statements are just for development/degugging.
-        exp = float(str(lst[12]) + str(lst[13]) + str(lst[14]))
-        print('exp =', exp)
-        mult = 10.0 ** exp
-        print('mult =', mult)
-        mantissa = ''
-        for i in range(0, 10):
-            mantissa = mantissa + str(lst[i])
-        mantissa = float(mantissa)
-        print('mantissa =', mantissa)
-        result = float(mantissa * mult)
-        print('result =', result)
-        stack["X"] = result
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        action_chars, stack, mem = get_exponent(stack, mem)
+        #        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
     else:
         print(cmd, 'not yet implemented')
         action_chars = dump_zeros(stack)
-        return action_chars, stack, mem, True
+        return action_chars, stack, mem
 
 
 def display_registers(mem, stack):
@@ -392,7 +389,7 @@ def main():
     # registers and mem locations.  Display them all the time during development.
     #
     python_check()
-    # Initialize operational stack
+    # Create operational stack as a Python dictionary
     stack = {"T": 0.0,
              "Z": 0.0,
              "Y": 0.0,
@@ -402,7 +399,6 @@ def main():
     mem = float(0.0)
     try:
         chars = "0.             "
-        existing_display = chars
         a_number = True
         show_calc(chars, a_number, False)
         display_registers(mem, stack)
@@ -412,25 +408,18 @@ def main():
             cmd, a_number = get_cmd(cmd)
             print()
             if not a_number:
-                new_display, stack, mem, need_update = process_action_keys(cmd, stack, mem)
-                if need_update:
-                    new_display = float(stack["X"])
-                    show_calc(new_display, True, False)
-                else:
-                    existing_display = float(stack["X"])
-                    show_calc(existing_display, True, False)
+                cmd, stack, mem = process_action_keys(cmd, stack, mem)
+                to_display = stack["X"]
+                show_calc(to_display, True, False)
             else:
                 lo = 0.01
                 hi = 1000000000.0
-                # If it's in the scientific notation range, apply the rules above, otherwise
-                # just return it "as is"
                 cmd = float(cmd)
                 in_range = min(lo, hi) < cmd < max(lo, hi)
                 if in_range:
                     stack["X"] = float(cmd)
                 else:
                     stack["X"] = np.format_float_scientific(float(cmd), exp_digits=2, unique=False, precision=9)
-
                 numeric_chars = f"{cmd:<15}"
                 numeric_chars = float(numeric_chars)
                 show_calc(numeric_chars, a_number, False)
