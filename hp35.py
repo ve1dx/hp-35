@@ -3,9 +3,11 @@
 
 import sys
 import numpy as np
+import math
 import time
 from getkey import getkey, keys
 import hp35data as hpdata
+from termcolor import cprint
 
 
 def hp35_scientific_notation(float_number):
@@ -102,6 +104,11 @@ def show_calc(display, valid_number, off):
     #
     elif off:
         led_display = '               '
+    #
+    # Flash 0.0 on √ od negative number
+    #
+    elif display == 'wink':
+        led_display = '0.0            '
     else:
         led_display = display.ljust(15, ' ')
     #
@@ -110,7 +117,15 @@ def show_calc(display, valid_number, off):
     #
     spaced_chars = ' '.join(led_display)
     print("┌--------------------------------------┐")
-    print("|   ", spaced_chars, "      |", sep="")
+    if display != 'wink':
+        print("|   ", spaced_chars, "      |", sep="")
+
+    else:
+        vertical = '|'
+        text = '    0.                                '
+        print(vertical, end='')
+        cprint(text, 'white', attrs=['blink'], end='')
+        print(vertical)
     print("|______________________________________|")
     print("|                                      |")
     #
@@ -315,6 +330,62 @@ def get_exponent(stack, mem):
     return action_chars, stack, mem
 
 
+def add(stack):
+    total = stack["X"] + stack["Y"]
+    stack["X"] = round(total, 9)
+    return
+
+
+def subtract(stack):
+    difference = stack["Y"] - stack["X"]
+    stack["X"] = round(difference, 9)
+    return
+
+
+def multiply(stack):
+    product = stack["Y"] * stack["X"]
+    stack["X"] = round(product, 9)
+    return
+
+
+def divide(stack):
+    try:
+        wink = False
+        quotient = stack["Y"] / stack["X"]
+        stack["X"] = round(quotient, 9)
+        return wink
+    except ZeroDivisionError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def reciprocal(stack):
+    try:
+        wink = False
+        number = stack["X"]
+        quotient = 1.0 / number
+        stack["X"] = round(quotient, 9)
+        return wink
+    except ZeroDivisionError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def square_root(stack):
+    try:
+        wink = False
+        number = stack["X"]
+        root = math.sqrt(number)
+        stack["X"] = round(root, 9)
+        return wink
+    except ValueError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
 def process_action_keys(cmd, stack, mem):
     #
     # First the memory/stack/clr, etc., keys
@@ -367,7 +438,36 @@ def process_action_keys(cmd, stack, mem):
         return action_chars, stack, mem
     elif cmd == 'eex':
         action_chars, stack, mem = get_exponent(stack, mem)
-        #        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == '+':
+        add(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == '-':
+        subtract(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'x':
+        multiply(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == '/':
+        wink = divide(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == '1x':
+        wink = reciprocal(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'rx':
+        wink = square_root(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
         return action_chars, stack, mem
     else:
         print(cmd, 'not yet implemented')
@@ -409,8 +509,11 @@ def main():
             print()
             if not a_number:
                 cmd, stack, mem = process_action_keys(cmd, stack, mem)
-                to_display = stack["X"]
-                show_calc(to_display, True, False)
+                if cmd != 'wink':
+                    to_display = stack["X"]
+                    show_calc(to_display, True, False)
+                else:
+                    show_calc(cmd, False, False)
             else:
                 lo = 0.01
                 hi = 1000000000.0
@@ -419,7 +522,7 @@ def main():
                 if in_range:
                     stack["X"] = float(cmd)
                 else:
-                    stack["X"] = np.format_float_scientific(float(cmd), exp_digits=2, unique=False, precision=9)
+                    stack["X"] = float(np.format_float_scientific(float(cmd), exp_digits=2, unique=False, precision=9))
                 numeric_chars = f"{cmd:<15}"
                 numeric_chars = float(numeric_chars)
                 show_calc(numeric_chars, a_number, False)
