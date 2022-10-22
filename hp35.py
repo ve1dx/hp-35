@@ -386,6 +386,53 @@ def square_root(stack):
     return wink
 
 
+def log(stack):
+    wink = False
+    number = float(stack["X"])
+    if number > 0.0:
+        the_log = math.log10(number)
+        stack["X"] = round(the_log, 9)
+        return wink
+    else:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def ln(stack):
+    wink = False
+    number = float(stack["X"])
+    if number > 0.0:
+        the_log = np.log(number)
+        stack["X"] = round(the_log, 9)
+        return wink
+    else:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def sin(stack):
+    number = float(stack["X"])
+    sine = math.sin(math.radians(number))
+    stack["X"] = round(sine, 9)
+    return
+
+
+def cos(stack):
+    number = float(stack["X"])
+    cosine = math.cos(math.radians(number))
+    stack["X"] = round(cosine, 9)
+    return
+
+
+def tan(stack):
+    number = float(stack["X"])
+    tangent = math.tan(math.radians(number))
+    stack["X"] = round(tangent, 9)
+    return
+
+
 def process_action_keys(cmd, stack, mem):
     #
     # First the memory/stack/clr, etc., keys
@@ -468,6 +515,30 @@ def process_action_keys(cmd, stack, mem):
         action_chars = dump_zeros(stack)
         if wink:
             return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'log':
+        wink = log(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'ln':
+        wink = ln(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'sin':
+        sin(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'cos':
+        cos(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'tan':
+        tan(stack)
+        action_chars = dump_zeros(stack)
         return action_chars, stack, mem
     else:
         print(cmd, 'not yet implemented')
