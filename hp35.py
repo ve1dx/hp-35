@@ -3,16 +3,18 @@
 
 import sys
 import numpy as np
+import math
 import time
 from getkey import getkey, keys
 import hp35data as hpdata
+from termcolor import cprint
 
 
 def hp35_scientific_notation(float_number):
     # Work on a copy because Python passes by reference
     number = float_number
     # Assume we'll convert to scientific notation
-    snot = True
+    sci_note = True
     #
     # The HP-35 uses scientific notation if the number is not between
     # 0.01 (10⁻² and 10,000,000,000 which is 10 billion or 10¹⁰.)  It has 9
@@ -37,8 +39,8 @@ def hp35_scientific_notation(float_number):
     if number == 0.0:
         str_number = str(number)
         positive = True
-        snot = False
-        return str_number, positive, snot
+        sci_note = False
+        return str_number, positive, sci_note
     positive = number >= 0.0
     number = abs(number)
     lo = 0.01
@@ -83,18 +85,18 @@ def hp35_scientific_notation(float_number):
         # Convert back into a string
         s_number = "".join(sl)
     else:
-        snot = False
+        sci_note = False
         s_number = str(number)
-    return s_number, positive, snot
+    return s_number, positive, sci_note
 
 
 def show_calc(display, valid_number, off):
     if valid_number:
         number = float(display)
-        led_display, positive, snot = hp35_scientific_notation(number)
-        if not positive and not snot:
+        led_display, positive, sci_note = hp35_scientific_notation(number)
+        if not positive and not sci_note:
             led_display = '-' + led_display
-        if not snot:
+        if not sci_note:
             led_display = led_display.rstrip("0")
         led_display = led_display.ljust(15, ' ')
     #
@@ -102,6 +104,11 @@ def show_calc(display, valid_number, off):
     #
     elif off:
         led_display = '               '
+    #
+    # Flash 0.0 on √ od negative number
+    #
+    elif display == 'wink':
+        led_display = '0.0            '
     else:
         led_display = display.ljust(15, ' ')
     #
@@ -110,7 +117,15 @@ def show_calc(display, valid_number, off):
     #
     spaced_chars = ' '.join(led_display)
     print("┌--------------------------------------┐")
-    print("|   ", spaced_chars, "      |", sep="")
+    if display != 'wink':
+        print("|   ", spaced_chars, "      |", sep="")
+
+    else:
+        vertical = '|'
+        text = '    0.                                '
+        print(vertical, end='')
+        cprint(text, 'white', attrs=['blink'], end='')
+        print(vertical)
     print("|______________________________________|")
     print("|                                      |")
     #
@@ -155,14 +170,14 @@ def python_check():
 def display_key_menu():
     print()
     print('off  on')
-    print('xy', '   log', '   ln', '  ex', '  clr')
-    print('rx', '   arc', '   sin', ' cos', ' tan')
-    print('1x', '   rv', '    rd', '  sto', ' rcl')
-    print('e(nter)', '     chs', ' eex', ' clx')
-    print('-', '      7', '      8', '     9')
-    print('+', '      4', '      5', '     6')
-    print('x', '      1', '      2', '     3')
-    print('/', '      0', '      .', '    pi')
+    print('xy', '    log', '    ln', '  ex', '  clr')
+    print('rx', ' a<s,c,t>', '  sin', ' cos', ' tan')
+    print('1x', '     rv', '    rd', '  sto', ' rcl')
+    print('e(nter)', '       chs', ' eex', ' clx')
+    print('-', '       7', '      8', '      9')
+    print('+', '       4', '      5', '      6')
+    print('x', '       1', '      2', '      3')
+    print('/', '       0', '      .', '     pi')
     print()
 
 
@@ -260,12 +275,12 @@ def get_exponent(stack, mem):
     temp = round(float(stack["X"]), 9)
     if temp == 0.0:
         temp = 1.0
-    led_display, positive, snot = hp35_scientific_notation(temp)
+    led_display, positive, sci_note = hp35_scientific_notation(temp)
     if not positive:
         led_display = '-' + led_display
     # If it's not scientific notation remove the trailing zeros and
     # pad it out to 15 'LED' display characters
-    if not snot:
+    if not sci_note:
         led_display = led_display.rstrip("0")
         led_display = led_display.ljust(15, ' ')
         # Stick 00s in last two locations in preparation for the entering of the exponent. Temporarily
@@ -303,8 +318,8 @@ def get_exponent(stack, mem):
     # Before updating the display string, convert the mantissa and exponent to a
     # Python float and put it in the X register.
     #
-    exp = float(str(lst[12]) + str(lst[13]) + str(lst[14]))
-    mult = 10.0 ** exp
+    exponent = float(str(lst[12]) + str(lst[13]) + str(lst[14]))
+    mult = 10.0 ** exponent
     mantissa = ''
     for i in range(0, 10):
         mantissa = mantissa + str(lst[i])
@@ -313,6 +328,181 @@ def get_exponent(stack, mem):
     stack["X"] = result
     action_chars = dump_zeros(stack)
     return action_chars, stack, mem
+
+
+def add(stack):
+    total = stack["X"] + stack["Y"]
+    stack["X"] = round(total, 9)
+    return
+
+
+def subtract(stack):
+    difference = stack["Y"] - stack["X"]
+    stack["X"] = round(difference, 9)
+    return
+
+
+def multiply(stack):
+    product = stack["Y"] * stack["X"]
+    stack["X"] = round(product, 9)
+    return
+
+
+def divide(stack):
+    try:
+        wink = False
+        quotient = stack["Y"] / stack["X"]
+        stack["X"] = round(quotient, 9)
+        return wink
+    except ZeroDivisionError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def reciprocal(stack):
+    try:
+        wink = False
+        number = stack["X"]
+        quotient = 1.0 / number
+        stack["X"] = round(quotient, 9)
+        return wink
+    except ZeroDivisionError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def square_root(stack):
+    try:
+        wink = False
+        number = stack["X"]
+        root = math.sqrt(number)
+        stack["X"] = round(root, 9)
+        return wink
+    except ValueError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def log(stack):
+    wink = False
+    number = float(stack["X"])
+    if number > 0.0:
+        the_log = math.log10(number)
+        stack["X"] = round(the_log, 9)
+        return wink
+    else:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def ln(stack):
+    wink = False
+    number = float(stack["X"])
+    if number > 0.0:
+        the_log = np.log(number)
+        stack["X"] = round(the_log, 9)
+        return wink
+    else:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def sin(stack):
+    number = float(stack["X"])
+    if number > 360.0:
+        number = math.fmod(number, 360.0)
+    sine = math.sin(math.radians(number))
+    stack["X"] = round(sine, 9)
+    return
+
+
+def arcsin(stack):
+    wink = False
+    lo = -1.0
+    hi = 1.0
+    number = float(stack["X"])
+    in_range = min(lo, hi) < number < max(lo, hi)
+    if in_range:
+        temp = np.arcsin(number)
+        asin = np.rad2deg(temp)
+        stack["X"] = round(asin, 9)
+    else:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def cos(stack):
+    number = float(stack["X"])
+    if number > 360.0:
+        number = math.fmod(number, 360.0)
+    cosine = math.cos(math.radians(number))
+    stack["X"] = round(cosine, 9)
+    return
+
+
+def arccos(stack):
+    wink = False
+    lo = -1.0
+    hi = 1.0
+    number = float(stack["X"])
+    in_range = min(lo, hi) < number < max(lo, hi)
+    if in_range:
+        temp = np.arccos(number)
+        acos = np.rad2deg(temp)
+        stack["X"] = round(acos, 9)
+    else:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def tan(stack):
+    number = float(stack["X"])
+    if number > 360.0:
+        number = math.fmod(number, 360.0)
+    if number / 90.0 == 1.0:
+        tangent = float(9.99999999e99)
+    elif number / 90.0 == 3.0:
+        tangent = float(-9.99999999e99)
+    else:
+        tangent = math.tan(math.radians(number))
+    stack["X"] = round(tangent, 9)
+    return
+
+
+def arctan(stack):
+    number = float(stack["X"])
+    temp = np.arctan(number)
+    atan = np.rad2deg(temp)
+    stack["X"] = round(atan, 9)
+    return
+
+
+def exp(stack):
+    wink = False
+    x = float(stack["X"])
+    y = float(stack["Y"])
+    if x > 0.0:
+        x_to_y = math.pow(x, y)
+        stack["X"] = round(x_to_y, 9)
+        return wink
+    else:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
+
+
+def ex(stack):
+    number = float(stack["X"])
+    e_to_x = math.exp(number)
+    stack["X"] = round(e_to_x, 9)
+    return
 
 
 def process_action_keys(cmd, stack, mem):
@@ -367,7 +557,86 @@ def process_action_keys(cmd, stack, mem):
         return action_chars, stack, mem
     elif cmd == 'eex':
         action_chars, stack, mem = get_exponent(stack, mem)
-        #        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == '+':
+        add(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == '-':
+        subtract(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'x':
+        multiply(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == '/':
+        wink = divide(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == '1x':
+        wink = reciprocal(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'rx':
+        wink = square_root(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'log':
+        wink = log(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'ln':
+        wink = ln(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'sin':
+        sin(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'as':
+        wink = arcsin(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'cos':
+        cos(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'ac':
+        wink = arccos(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'tan':
+        tan(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'at':
+        arctan(stack)
+        action_chars = dump_zeros(stack)
+        return action_chars, stack, mem
+    elif cmd == 'xy':
+        wink = exp(stack)
+        action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
+        return action_chars, stack, mem
+    elif cmd == 'ex':
+        ex(stack)
+        action_chars = dump_zeros(stack)
         return action_chars, stack, mem
     else:
         print(cmd, 'not yet implemented')
@@ -388,6 +657,7 @@ def main():
     # Eventually use argparse to determine if we want verbose node to display the
     # registers and mem locations.  Display them all the time during development.
     #
+    verbose = True
     python_check()
     # Create operational stack as a Python dictionary
     stack = {"T": 0.0,
@@ -401,7 +671,8 @@ def main():
         chars = "0.             "
         a_number = True
         show_calc(chars, a_number, False)
-        display_registers(mem, stack)
+        if verbose:
+            display_registers(mem, stack)
         cmd = ''
         while True:
             display_key_menu()
@@ -409,8 +680,13 @@ def main():
             print()
             if not a_number:
                 cmd, stack, mem = process_action_keys(cmd, stack, mem)
-                to_display = stack["X"]
-                show_calc(to_display, True, False)
+                if cmd != 'wink':
+                    to_display = stack["X"]
+                    show_calc(to_display, True, False)
+                else:
+                    show_calc(cmd, False, False)
+                if verbose:
+                    display_registers(mem, stack)
             else:
                 lo = 0.01
                 hi = 1000000000.0
@@ -419,11 +695,10 @@ def main():
                 if in_range:
                     stack["X"] = float(cmd)
                 else:
-                    stack["X"] = np.format_float_scientific(float(cmd), exp_digits=2, unique=False, precision=9)
-                numeric_chars = f"{cmd:<15}"
-                numeric_chars = float(numeric_chars)
-                show_calc(numeric_chars, a_number, False)
-            display_registers(mem, stack)
+                    stack["X"] = float(np.format_float_scientific(float(cmd), exp_digits=2, unique=False, precision=9))
+                show_calc(cmd, a_number, False)
+                if verbose:
+                    display_registers(mem, stack)
     except KeyboardInterrupt:
         print()
         print("Keyboard interrupt by user")
