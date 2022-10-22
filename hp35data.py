@@ -3,7 +3,7 @@
 
 key_list = ['off', 'on',
             'xy', 'log', 'ln', 'ex', 'clr',
-            'rx', 'arc', 'sin', 'cos', 'tan',
+            'rx', 'as', 'ac', 'at', 'sin', 'cos', 'tan',
             '1x', 'rv', 'rd', 'sto', 'rcl',
             'e', 'chs', 'eex', 'clx',
             '-', '7', '8', '9',
