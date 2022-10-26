@@ -353,7 +353,6 @@ def divide(stack):
         wink = False
         quotient = stack["Y"] / stack["X"]
         stack["X"] = round(quotient, 9)
-        return wink
     except ZeroDivisionError:
         stack["X"] = float(0.0)
         wink = True
@@ -366,7 +365,6 @@ def reciprocal(stack):
         number = stack["X"]
         quotient = 1.0 / number
         stack["X"] = round(quotient, 9)
-        return wink
     except ZeroDivisionError:
         stack["X"] = float(0.0)
         wink = True
@@ -379,7 +377,6 @@ def square_root(stack):
         number = stack["X"]
         root = math.sqrt(number)
         stack["X"] = round(root, 9)
-        return wink
     except ValueError:
         stack["X"] = float(0.0)
         wink = True
@@ -423,10 +420,8 @@ def sin(stack):
 
 def arcsin(stack):
     wink = False
-    lo = -1.0
-    hi = 1.0
     number = float(stack["X"])
-    in_range = min(lo, hi) < number < max(lo, hi)
+    in_range = -1 <= number <= 1
     if in_range:
         temp = np.arcsin(number)
         asin = np.rad2deg(temp)
@@ -448,10 +443,8 @@ def cos(stack):
 
 def arccos(stack):
     wink = False
-    lo = -1.0
-    hi = 1.0
     number = float(stack["X"])
-    in_range = min(lo, hi) < number < max(lo, hi)
+    in_range = -1 <= number <= 1
     if in_range:
         temp = np.arccos(number)
         acos = np.rad2deg(temp)
