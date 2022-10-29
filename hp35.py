@@ -656,20 +656,20 @@ def main():
         formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=40, ), )
     my_parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
     my_parser.add_argument('-V', '--verbose',
-                           help='Stack (X,Y, Z and T registers) and mem contents are displayed',
+                           help='stack (X,Y,Z,T registers) and mem are displayed, Default is False',
                            action='store_true',
                            default=False,
                            )
-    my_parser.add_argument('-c', '--colour',
-                           help='input test colour scheme - White/Red, Black/Red, Black/White, Black/Red)',
+    my_parser.add_argument('-c',
+                           help='color scheme - default is White calculator with Red display i.e. WR',
                            action='store',
-                           choices=['WR', 'BR', 'BW', 'BR'],
+                           choices=['WR', 'BR', 'WW', 'BW', 'BR', 'BB'],
                            default='WR',
                            )
     my_parser.epilog = "Use 'off' to exit program."
     args = my_parser.parse_args()
     verbose = args.verbose
-    colour_scheme = args.colour
+    color_scheme = args.c
     # Create operational stack as a Python dictionary
     stack = {"T": 0.0,
              "Z": 0.0,
