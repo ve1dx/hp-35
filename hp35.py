@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import sys
 import numpy as np
 import math
@@ -118,13 +119,16 @@ def show_calc(display, valid_number, off):
     spaced_chars = ' '.join(led_display)
     print("┌--------------------------------------┐")
     if display != 'wink':
-        print("|   ", spaced_chars, "      |", sep="")
-
+        vertical_1 = '|     '
+        vertical_2 = '    |'
+        print(vertical_1, end='')
+        cprint(spaced_chars, 'red', end='')
+        print(vertical_2)
     else:
         vertical = '|'
         text = '    0.                                '
         print(vertical, end='')
-        cprint(text, 'white', attrs=['blink'], end='')
+        cprint(text, 'red', attrs=['blink'], end='')
         print(vertical)
     print("|______________________________________|")
     print("|                                      |")
@@ -646,12 +650,26 @@ def display_registers(mem, stack):
 
 
 def main():
-    #
-    # Eventually use argparse to determine if we want verbose node to display the
-    # registers and mem locations.  Display them all the time during development.
-    #
-    verbose = True
     python_check()
+    my_parser = argparse.ArgumentParser(
+        prog="hp35",
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=40, ), )
+    my_parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
+    my_parser.add_argument('-V', '--verbose',
+                           help='Stack (X,Y, Z and T registers) and mem contents are displayed',
+                           action='store_true',
+                           default=False,
+                           )
+    my_parser.add_argument('-c', '--colour',
+                           help='input test colour scheme - White/Red, Black/Red, Black/White, Black/Red)',
+                           action='store',
+                           choices=['WR', 'BR', 'BW', 'BR'],
+                           default='WR',
+                           )
+    my_parser.epilog = "Use 'off' to exit program."
+    args = my_parser.parse_args()
+    verbose = args.verbose
+    colour_scheme = args.colour
     # Create operational stack as a Python dictionary
     stack = {"T": 0.0,
              "Z": 0.0,
