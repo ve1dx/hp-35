@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
+from argparse import RawTextHelpFormatter
 import sys
 import numpy as np
 import math
+import textwrap
 import time
 from getkey import getkey, keys
 import hp35data as hpdata
@@ -25,11 +28,17 @@ def hp35_scientific_notation(float_number):
     # depending on the sign of the number. It also doesn't display an E or e,
     # but rather a space or a minus sign in LED location 13, indicating a
     # big or small number. It's overall display range is between
-    # ' 9.999999999 99' and '-9.999999999 99' (each is 15 digits.)  If the
-    # exponential notation number has 'trailing 0s' we have to remove them:
+    # ' 9.999999999 99' and '-9.999999999 99' (each is 15 digits.)
+    #
+    # If the exponential notation number has 'trailing 0s' we have to remove them:
     # e.g. 1.004500000 25 becomes ' 1.0045      25', and ' 1.000000000 55' becomes
     # ' 1.          55'
     # Also, things like 4.562389e+16 need to be converted to ' 1.0045       25'
+    #
+    # Since the range of the calculator is between -9.99999999e+99 and 9.999999999e+99
+    # and if we exceed that, the display becomes the appropriate 'edge' number in HP-35
+    # limit of '-9.999999999 99' or ' 9.999999999 99'
+    #
     # Finally, if there is no scientific notation required, the HP-35 doesn't display
     # trailing zeros on any numbers.
     #
@@ -37,11 +46,19 @@ def hp35_scientific_notation(float_number):
     # the above rules.
     #
     if number == 0.0:
-        str_number = str(number)
+        str_number = str(round(number, 9))
         positive = True
         sci_note = False
         return str_number, positive, sci_note
     positive = number >= 0.0
+    over_flow = number > 9.99999999e+99
+    if over_flow:
+        str_number = ' 9.999999999 99'
+        return str_number, True, True
+    under_flow = number < -9.99999999e+99
+    if under_flow:
+        str_number = '-9.999999999 99'
+        return str_number, False, True
     number = abs(number)
     lo = 0.01
     hi = 1000000000.0
@@ -51,6 +68,7 @@ def hp35_scientific_notation(float_number):
     if not in_range:
         # Break the number into a mantissa and exponent and make it a string
         s_number = str(np.format_float_scientific(number, exp_digits=2, unique=False, precision=9))
+
         # Convert string to a list, so we can get at the characters because of Python's immutable strings
         # Convert to a list (which would be indexed 0-14)
         sl = list(s_number)
@@ -90,7 +108,11 @@ def hp35_scientific_notation(float_number):
     return s_number, positive, sci_note
 
 
-def show_calc(display, valid_number, off):
+def show_calc(display, disp_col, valid_number, off):
+    #
+    # Lot of fooling around here to get things to fit in the
+    # display properly as per the 1972 HP-35 'standard'
+    #
     if valid_number:
         number = float(display)
         led_display, positive, sci_note = hp35_scientific_notation(number)
@@ -98,6 +120,7 @@ def show_calc(display, valid_number, off):
             led_display = '-' + led_display
         if not sci_note:
             led_display = led_display.rstrip("0")
+            led_display = textwrap.shorten(led_display, width=15, placeholder='')
         led_display = led_display.ljust(15, ' ')
     #
     # When the calculator off, the display should be blank.
@@ -105,7 +128,8 @@ def show_calc(display, valid_number, off):
     elif off:
         led_display = '               '
     #
-    # Flash 0.0 on √ od negative number
+    # Flash 0.0 on √ of negative number and other
+    # illegal math operations.
     #
     elif display == 'wink':
         led_display = '0.0            '
@@ -118,17 +142,19 @@ def show_calc(display, valid_number, off):
     spaced_chars = ' '.join(led_display)
     print("┌--------------------------------------┐")
     if display != 'wink':
-        print("|   ", spaced_chars, "      |", sep="")
-
+        vertical_1 = '|     '
+        vertical_2 = '    |'
+        print(vertical_1, end='')
+        cprint(spaced_chars, disp_col, attrs=['bold'], end='')
+        print(vertical_2)
     else:
         vertical = '|'
         text = '    0.                                '
         print(vertical, end='')
-        cprint(text, 'white', attrs=['blink'], end='')
+        cprint(text, disp_col, attrs=['blink', 'bold'], end='')
         print(vertical)
     print("|______________________________________|")
     print("|                                      |")
-    #
     if off:
         print("|   OFF═ ON                            |")
     else:
@@ -498,13 +524,13 @@ def ex(stack):
     return
 
 
-def process_action_keys(cmd, stack, mem):
+def process_action_keys(cmd, disp_col, stack, mem):
     #
     # First the memory/stack/clr, etc., keys
     #
     if cmd == 'off':
         action_chars = ''
-        show_calc(action_chars, False, True)
+        show_calc(action_chars, disp_col, False, True)
         print('HP-35 is powering down')
         time.sleep(0.3)  # Time delay for slower systems to allow the display to update before exit
         sys.exit(0)
@@ -646,12 +672,40 @@ def display_registers(mem, stack):
 
 
 def main():
-    #
-    # Eventually use argparse to determine if we want verbose node to display the
-    # registers and mem locations.  Display them all the time during development.
-    #
-    verbose = True
     python_check()
+    epi_text = "LED display colour codes: G=green,Y=yellow,R=red,B=blue,M=magenta,C=cyan. \nUse " \
+               "'off' to turn off calculator and exit program.\n" \
+               "Read 'HP-35.txt' for more details o this program"
+    my_parser = argparse.ArgumentParser(prog="hp35", formatter_class=RawTextHelpFormatter)
+    my_parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
+    my_parser.add_argument('-V', '--verbose',
+                           help='stack (X,Y,Z,T registers) and mem are displayed, Default is False',
+                           action='store_true',
+                           default=False,
+                           )
+    my_parser.add_argument('-d', '--display',
+                           help='LED display colour,default is white.',
+                           action='store',
+                           choices=['G', 'Y', 'R', 'B', 'M', 'C'],
+                           )
+    my_parser.epilog = epi_text
+    args = my_parser.parse_args()
+    verbose = args.verbose
+    colour = str(args.display)
+    disp_col = 'white'
+    if colour == 'G':
+        disp_col = 'green'
+    elif colour == 'Y':
+        disp_col = 'yellow'
+    elif colour == 'R':
+        disp_col = 'red'
+    elif colour == 'B':
+        disp_col = 'blue'
+    elif colour == 'M':
+        disp_col = 'magenta'
+    elif colour == 'C':
+        disp_col = 'cyan'
+
     # Create operational stack as a Python dictionary
     stack = {"T": 0.0,
              "Z": 0.0,
@@ -663,7 +717,7 @@ def main():
     try:
         chars = "0.             "
         a_number = True
-        show_calc(chars, a_number, False)
+        show_calc(chars, disp_col, a_number, False)
         if verbose:
             display_registers(mem, stack)
         cmd = ''
@@ -672,12 +726,12 @@ def main():
             cmd, a_number = get_cmd(cmd)
             print()
             if not a_number:
-                cmd, stack, mem = process_action_keys(cmd, stack, mem)
+                cmd, stack, mem = process_action_keys(cmd, disp_col, stack, mem)
                 if cmd != 'wink':
                     to_display = stack["X"]
-                    show_calc(to_display, True, False)
+                    show_calc(to_display, disp_col, True, False)
                 else:
-                    show_calc(cmd, False, False)
+                    show_calc(cmd, disp_col, False, False)
                 if verbose:
                     display_registers(mem, stack)
             else:
@@ -689,7 +743,7 @@ def main():
                     stack["X"] = float(cmd)
                 else:
                     stack["X"] = float(np.format_float_scientific(float(cmd), exp_digits=2, unique=False, precision=9))
-                show_calc(cmd, a_number, False)
+                show_calc(cmd, disp_col, a_number, False)
                 if verbose:
                     display_registers(mem, stack)
     except KeyboardInterrupt:
