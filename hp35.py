@@ -19,6 +19,11 @@ def hp35_scientific_notation(float_number):
     # Assume we'll convert to scientific notation
     sci_note = True
     #
+    # This is a complex function because the goal is to emulate the
+    # behaviour of the HP-35, not to provide 100% floating point precision 21st
+    # century Python math. The HP-35 was, and still is, 'good enough' for almost
+    # any scientific or engineering project.
+    #
     # The HP-35 uses scientific notation if the number is not between
     # 0.01 (10⁻² and 10,000,000,000 which is 10 billion or 10¹⁰.)  It has 9
     # digits of precision.
@@ -369,9 +374,14 @@ def subtract(stack):
 
 
 def multiply(stack):
-    product = stack["Y"] * stack["X"]
-    stack["X"] = round(product, 9)
-    return
+    try:
+        wink = False
+        product = stack["Y"] * stack["X"]
+        stack["X"] = round(product, 9)
+    except OverflowError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
 
 
 def divide(stack):
@@ -508,8 +518,13 @@ def exp(stack):
     x = float(stack["X"])
     y = float(stack["Y"])
     if x > 0.0:
-        x_to_y = math.pow(x, y)
-        stack["X"] = round(x_to_y, 9)
+        try:
+            x_to_y = math.pow(x, y)
+            stack["X"] = round(x_to_y, 9)
+            return wink
+        except OverflowError:
+            stack["X"] = float(0.0)
+            wink = True
         return wink
     else:
         stack["X"] = float(0.0)
@@ -518,10 +533,16 @@ def exp(stack):
 
 
 def ex(stack):
-    number = float(stack["X"])
-    e_to_x = math.exp(number)
-    stack["X"] = round(e_to_x, 9)
-    return
+    wink = False
+    try:
+        number = float(stack["X"])
+        e_to_x = math.exp(number)
+        stack["X"] = round(e_to_x, 9)
+        return wink
+    except OverflowError:
+        stack["X"] = float(0.0)
+        wink = True
+    return wink
 
 
 def process_action_keys(cmd, disp_col, stack, mem):
@@ -586,8 +607,10 @@ def process_action_keys(cmd, disp_col, stack, mem):
         action_chars = dump_zeros(stack)
         return action_chars, stack, mem
     elif cmd == 'x':
-        multiply(stack)
+        wink = multiply(stack)
         action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
         return action_chars, stack, mem
     elif cmd == '/':
         wink = divide(stack)
@@ -654,11 +677,18 @@ def process_action_keys(cmd, disp_col, stack, mem):
             return 'wink', stack, mem
         return action_chars, stack, mem
     elif cmd == 'ex':
-        ex(stack)
+        wink = ex(stack)
         action_chars = dump_zeros(stack)
+        if wink:
+            return 'wink', stack, mem
         return action_chars, stack, mem
     else:
-        print(cmd, 'not yet implemented')
+        #
+        # This point should never be reached, but
+        # it's here just in case the legality of
+        # input commands check fails
+        #
+        print(cmd, 'not implemented')
         action_chars = dump_zeros(stack)
         return action_chars, stack, mem
 
