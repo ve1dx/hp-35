@@ -294,7 +294,7 @@ def dump_zeros(stack):
     return chars
 
 
-def get_exponent(stack, mem):
+def get_exponent(stack, mem, disp_col):
     #
     # Some complex programming here because of the 1972 technical limitations of the HP-35 and
     # Python's immutable strings.
@@ -325,7 +325,12 @@ def get_exponent(stack, mem):
         # Don't display the entire calculator during the 'E EX' function
         spaced_chars = ' '.join(led_display)
         print("┌--------------------------------------┐")
-        print("|   ", spaced_chars, "      |", sep="")
+        vertical_1 = '|     '
+        vertical_2 = '    |'
+        print(vertical_1, end='')
+        cprint(spaced_chars, disp_col, attrs=['bold'], sep="", end='')
+        print(vertical_2)
+#        print("|   ", spaced_chars, "      |", sep="")
         print("|______________________________________|")
         print()
         print('> ')
@@ -596,7 +601,7 @@ def process_action_keys(cmd, disp_col, stack, mem):
         action_chars = dump_zeros(stack)
         return action_chars, stack, mem
     elif cmd == 'eex':
-        action_chars, stack, mem = get_exponent(stack, mem)
+        action_chars, stack, mem = get_exponent(stack, mem, disp_col)
         return action_chars, stack, mem
     elif cmd == '+':
         add(stack)
