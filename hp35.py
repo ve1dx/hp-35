@@ -330,7 +330,6 @@ def get_exponent(stack, mem, disp_col):
         print(vertical_1, end='')
         cprint(spaced_chars, disp_col, attrs=['bold'], sep="", end='')
         print(vertical_2)
-#        print("|   ", spaced_chars, "      |", sep="")
         print("|______________________________________|")
         print()
         print('> ')
@@ -452,8 +451,6 @@ def ln(stack):
 
 def sin(stack):
     number = float(stack["X"])
-    if number > 360.0:
-        number = math.fmod(number, 360.0)
     sine = math.sin(math.radians(number))
     stack["X"] = round(sine, 9)
     return
@@ -475,8 +472,6 @@ def arcsin(stack):
 
 def cos(stack):
     number = float(stack["X"])
-    if number > 360.0:
-        number = math.fmod(number, 360.0)
     cosine = math.cos(math.radians(number))
     stack["X"] = round(cosine, 9)
     return
@@ -498,8 +493,6 @@ def arccos(stack):
 
 def tan(stack):
     number = float(stack["X"])
-    if number > 360.0:
-        number = math.fmod(number, 360.0)
     if number / 90.0 == 1.0:
         tangent = float(9.99999999e99)
     elif number / 90.0 == 3.0:
@@ -710,7 +703,7 @@ def main():
     python_check()
     epi_text = "LED display colour codes: G=green,Y=yellow,R=red,B=blue,M=magenta,C=cyan. \nUse " \
                "'off' to turn off calculator and exit program.\n" \
-               "Read 'HP-35.txt' for more details o this program"
+               "Read 'HP-35.txt' for more details about this program"
     my_parser = argparse.ArgumentParser(prog="hp35", formatter_class=RawTextHelpFormatter)
     my_parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
     my_parser.add_argument('-V', '--verbose',
@@ -721,13 +714,15 @@ def main():
     my_parser.add_argument('-d', '--display',
                            help='LED display colour,default is white.',
                            action='store',
-                           choices=['G', 'Y', 'R', 'B', 'M', 'C'],
+                           default='W',
+                           choices=['W', 'G', 'Y', 'R', 'B', 'M', 'C'],
                            )
     my_parser.epilog = epi_text
     args = my_parser.parse_args()
     verbose = args.verbose
     colour = str(args.display)
-    disp_col = 'white'
+    if colour == 'W':
+        disp_col = 'white'
     if colour == 'G':
         disp_col = 'green'
     elif colour == 'Y':
@@ -740,7 +735,6 @@ def main():
         disp_col = 'magenta'
     elif colour == 'C':
         disp_col = 'cyan'
-
     # Create operational stack as a Python dictionary
     stack = {"T": 0.0,
              "Z": 0.0,
