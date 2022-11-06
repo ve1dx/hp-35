@@ -96,7 +96,7 @@ def hp35_scientific_notation(float_number):
                 sl[15] = sl[exp2_loc]
         # Remove the e and replace the + with a space if number is big or
         # with a - sign if the number is small.
-        if max(lo, hi) < number:
+        if hi < number:
             sl[13] = ' '
         else:
             sl[13] = '-'
@@ -627,11 +627,8 @@ def main():
                "Read 'HP-35.txt' for more details about this program"
     my_parser = argparse.ArgumentParser(prog="hp35", formatter_class=RawTextHelpFormatter)
     my_parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
-    my_parser.add_argument('-V', '--verbose',
-                           help='stack (X,Y,Z,T registers) and mem are displayed, Default is False',
-                           action='store_true',
-                           default=False,
-                           )
+    my_parser.add_argument('-q', '--quiet', action='store_false',
+                           help='display stack (X,Y,Z,T registers) and mem, Default is to display them')
     my_parser.add_argument('-d', '--display',
                            help='LED display colour,default is white.',
                            action='store',
@@ -640,7 +637,7 @@ def main():
                            )
     my_parser.epilog = epi_text
     args = my_parser.parse_args()
-    verbose = args.verbose
+    verbose = args.quiet
     colour = str(args.display)
     if colour == 'W':
         disp_col = 'white'
