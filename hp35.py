@@ -69,7 +69,7 @@ def hp35_scientific_notation(float_number):
     hi = 1000000000.0
     # If it's in the scientific notation range, apply the rules above, otherwise
     # just return it "as is"
-    in_range = min(lo, hi) < number < max(lo, hi)
+    in_range = lo < number < hi
     if not in_range:
         # Break the number into a mantissa and exponent and make it a string
         s_number = str(np.format_float_scientific(number, exp_digits=2, unique=False, precision=9))
@@ -688,7 +688,7 @@ def main():
                 lo = 0.01
                 hi = 1000000000.0
                 cmd = float(cmd)
-                in_range = min(lo, hi) < cmd < max(lo, hi)
+                in_range = lo < cmd < hi
                 if in_range:
                     stack["X"] = float(cmd)
                 else:
