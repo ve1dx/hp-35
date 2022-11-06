@@ -429,7 +429,6 @@ def log(stack):
     if number > 0.0:
         the_log = math.log10(number)
         stack["X"] = round(the_log, 9)
-        return wink
     else:
         stack["X"] = float(0.0)
         wink = True
@@ -442,7 +441,6 @@ def ln(stack):
     if number > 0.0:
         the_log = np.log(number)
         stack["X"] = round(the_log, 9)
-        return wink
     else:
         stack["X"] = float(0.0)
         wink = True
@@ -515,14 +513,12 @@ def exp(stack):
     wink = False
     x = float(stack["X"])
     y = float(stack["Y"])
-    if x > 0.0:
+    if x >= 0.0:
         try:
             x_to_y = math.pow(x, y)
             stack["X"] = round(x_to_y, 9)
-            return wink
         except OverflowError:
             stack["X"] = float(0.0)
-            wink = True
         return wink
     else:
         stack["X"] = float(0.0)
@@ -536,7 +532,6 @@ def ex(stack):
         number = float(stack["X"])
         e_to_x = math.exp(number)
         stack["X"] = round(e_to_x, 9)
-        return wink
     except OverflowError:
         stack["X"] = float(0.0)
         wink = True
@@ -547,6 +542,7 @@ def process_action_keys(cmd, disp_col, stack, mem):
     #
     # First the memory/stack/clr, etc., keys
     #
+    wink = False
     if cmd == 'off':
         action_chars = ''
         show_calc(action_chars, disp_col, False, True)
@@ -556,137 +552,62 @@ def process_action_keys(cmd, disp_col, stack, mem):
     if cmd == 'on':
         print("Calculator is already on.")
         print()
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'clr':
-        action_chars = "0.             "
         stack = clear_stack(stack)
         dump_zeros(stack)
         mem, stack = mem_func(mem, stack, cmd)
-        return action_chars, stack, mem
     elif cmd == 'e':
         stack = push_stack(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'rd':
         stack = rotate_stack(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'rv':
         stack = reverse_xy(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'sto':
         mem, stack = mem_func(mem, stack, cmd)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'rcl':
         mem, stack = mem_func(mem, stack, cmd)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'clx':
         stack["X"] = float(0.0)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'chs':
         temp = float(stack["X"])
         stack["X"] = temp * -1.0
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'eex':
         action_chars, stack, mem = get_exponent(stack, mem, disp_col)
-        return action_chars, stack, mem
     elif cmd == '+':
         add(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == '-':
         subtract(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'x':
         wink = multiply(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == '/':
         wink = divide(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == '1x':
         wink = reciprocal(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == 'rx':
         wink = square_root(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == 'log':
         wink = log(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == 'ln':
         wink = ln(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == 'sin':
         sin(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'as':
         wink = arcsin(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == 'cos':
         cos(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'ac':
         wink = arccos(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == 'tan':
         tan(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'at':
         arctan(stack)
-        action_chars = dump_zeros(stack)
-        return action_chars, stack, mem
     elif cmd == 'xy':
         wink = exp(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
     elif cmd == 'ex':
         wink = ex(stack)
-        action_chars = dump_zeros(stack)
-        if wink:
-            return 'wink', stack, mem
-        return action_chars, stack, mem
+    if wink:
+        return 'wink', stack, mem
     else:
-        #
-        # This point should never be reached, but
-        # it's here just in case the legality of
-        # input commands check fails
-        #
-        print(cmd, 'not implemented')
         action_chars = dump_zeros(stack)
         return action_chars, stack, mem
 
