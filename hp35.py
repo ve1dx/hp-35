@@ -624,7 +624,7 @@ def main():
     python_check()
     epi_text = "LED display colour codes: G=green,Y=yellow,R=red,B=blue,M=magenta,C=cyan. \nUse " \
                "'off' to turn off calculator and exit program.\n" \
-               "Read 'hp35.pdf' for more details about this program"
+               "Read the 'hp35.pdf' file for more details about the use of this emulator"
     my_parser = argparse.ArgumentParser(prog="hp35", formatter_class=RawTextHelpFormatter)
     my_parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
     my_parser.add_argument('-q', '--quiet', action='store_false',
@@ -639,6 +639,7 @@ def main():
     args = my_parser.parse_args()
     verbose = args.quiet
     colour = str(args.display)
+    disp_col = ''
     if colour == 'W':
         disp_col = 'white'
     if colour == 'G':
