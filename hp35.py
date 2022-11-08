@@ -624,7 +624,7 @@ def main():
     python_check()
     epi_text = "LED display colour codes: G=green,Y=yellow,R=red,B=blue,M=magenta,C=cyan. \nUse " \
                "'off' to turn off calculator and exit program.\n" \
-               "Read 'HP-35.txt' for more details about this program"
+               "Read 'hp35.pdf' for more details about this program"
     my_parser = argparse.ArgumentParser(prog="hp35", formatter_class=RawTextHelpFormatter)
     my_parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
     my_parser.add_argument('-q', '--quiet', action='store_false',
