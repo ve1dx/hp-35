@@ -639,21 +639,7 @@ def main():
     args = my_parser.parse_args()
     verbose = args.quiet
     colour = str(args.display)
-    disp_col = ''
-    if colour == 'W':
-        disp_col = 'white'
-    if colour == 'G':
-        disp_col = 'green'
-    elif colour == 'Y':
-        disp_col = 'yellow'
-    elif colour == 'R':
-        disp_col = 'red'
-    elif colour == 'B':
-        disp_col = 'blue'
-    elif colour == 'M':
-        disp_col = 'magenta'
-    elif colour == 'C':
-        disp_col = 'cyan'
+    disp_col = hpdata.colours[colour]
     # Create operational stack as a Python dictionary
     stack = {"T": 0.0,
              "Z": 0.0,

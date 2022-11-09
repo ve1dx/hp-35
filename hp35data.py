@@ -10,3 +10,6 @@ key_list = ['off', 'on',
             '+', '4', '5', '6',
             'x', '1', '2', '3',
             '/', '0', '.', 'pi', ]
+# G=green,Y=yellow,R=red,B=blue,M=magenta,C=cyan.
+colours = {'W': 'white', 'G': 'green', 'Y': 'yellow',
+           'R': 'red', 'B': 'blue', 'M': 'magenta', 'C': 'cyan'}
