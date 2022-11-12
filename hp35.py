@@ -56,7 +56,7 @@ def hp35_scientific_notation(float_number):
         sci_note = False
         return str_number, positive, sci_note
     positive = number >= 0.0
-    over_flow = number > 9.99999999e+99
+    over_flow = number >= 9.99999999e+99
     if over_flow:
         str_number = ' 9.999999999 99'
         return str_number, True, True
@@ -516,9 +516,13 @@ def exp(stack):
     if x >= 0.0:
         try:
             x_to_y = math.pow(x, y)
-            stack["X"] = round(x_to_y, 9)
+            if x_to_y > 9.99999999e+99:
+                stack["X"] = 9.99999999e+99
+            else:
+                stack["X"] = round(x_to_y, 9)
         except OverflowError:
             stack["X"] = float(0.0)
+            wink = True
         return wink
     else:
         stack["X"] = float(0.0)
@@ -531,7 +535,10 @@ def ex(stack):
     try:
         number = float(stack["X"])
         e_to_x = math.exp(number)
-        stack["X"] = round(e_to_x, 9)
+        if e_to_x > 9.99999999e+99:
+            stack["X"] = 9.99999999e+99
+        else:
+            stack["X"] = round(e_to_x, 9)
     except OverflowError:
         stack["X"] = float(0.0)
         wink = True
