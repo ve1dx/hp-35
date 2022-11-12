@@ -1,0 +1,5 @@
+numpy>=1.23.1
+getkey>=0.6.5
+termcolor>=1.1.0
+
+setuptools>=59.6.0
