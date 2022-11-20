@@ -13,6 +13,6 @@ setup(
     packages=find_packages(),
     url='https://github.com/ve1dx/hp-35',
     entry_points={
-        'console_scripts': ['hp-35=hp-35.hp-35:main'],
+        'console_scripts': ['hp35=hp35:main'],
     },
 )
