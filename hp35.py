@@ -13,9 +13,7 @@ import hp35data as hpdata
 from termcolor import cprint
 
 
-def hp35_scientific_notation(float_number):
-    # Work on a copy because Python passes by reference
-    number = float_number
+def hp35_scientific_notation(number):
     # Assume we'll convert to scientific notation
     sci_note = True
     #
@@ -73,7 +71,6 @@ def hp35_scientific_notation(float_number):
     if not in_range:
         # Break the number into a mantissa and exponent and make it a string
         s_number = str(np.format_float_scientific(number, exp_digits=2, unique=False, precision=9))
-
         # Convert string to a list, so we can get at the characters because of Python's immutable strings
         # Convert to a list (which would be indexed 0-14)
         sl = list(s_number)
