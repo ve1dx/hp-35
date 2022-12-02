@@ -328,9 +328,13 @@ def get_exponent(stack, mem, disp_col):
         cprint(spaced_chars, disp_col, attrs=['bold'], sep="", end='')
         print(vertical_2)
         print("|______________________________________|")
-        print()
-        print('> ')
-        key = getkey()
+        key = ''
+        while key not in hpdata.eex_list:
+            print()
+            print('> ')
+            key = getkey()
+            if key == keys.NEW_LINE:
+                break
         if key == keys.NEW_LINE:
             break
         if key != keys.MINUS:

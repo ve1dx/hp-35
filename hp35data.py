@@ -10,6 +10,6 @@ key_list = ['off', 'on',
             '+', '4', '5', '6',
             'x', '1', '2', '3',
             '/', '0', '.', 'pi', ]
-# G=green,Y=yellow,R=red,B=blue,M=magenta,C=cyan.
+eex_list = ['-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '\n']
 colours = {'W': 'white', 'G': 'green', 'Y': 'yellow',
            'R': 'red', 'B': 'blue', 'M': 'magenta', 'C': 'cyan'}
