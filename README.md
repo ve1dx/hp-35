@@ -23,9 +23,3 @@ pip uninstall hp35
 
 Use hp35 --help for more info.  Also refer to the documentation file 'hp-35_emulator.pdf'
 
-
-Python libraries required:
-
-numpy
-getkey
-termcolor
