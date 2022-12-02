@@ -223,7 +223,12 @@ def get_cmd(choice):
     legal_key = False
     a_number = False
     while not legal_key:
-        choice = input('> ')
+        try:
+            choice = input('> ')
+            # Special trap for EOF (ctrl-d)
+        except EOFError:
+            pass
+
         choice = str(choice)
         if choice == 'pi':
             choice = '3.141592654    '
@@ -328,9 +333,13 @@ def get_exponent(stack, mem, disp_col):
         cprint(spaced_chars, disp_col, attrs=['bold'], sep="", end='')
         print(vertical_2)
         print("|______________________________________|")
-        print()
-        print('> ')
-        key = getkey()
+        key = ''
+        while key not in hpdata.eex_list:
+            print()
+            print('> ')
+            key = getkey()
+            if key == keys.NEW_LINE:
+                break
         if key == keys.NEW_LINE:
             break
         if key != keys.MINUS:

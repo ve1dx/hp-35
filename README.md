@@ -6,22 +6,25 @@ Requires Python version 3.5 or higher and has been tested on Debian 11 (64-bit),
 
 To install, download hp-35-main.zip, and extract and install it:
 
-unzip hp-35-main.zip
+1) unzip hp-35-main.zip
 
-cd hp-35-main
+2) optionally create new virtual environment & activate it
 
-pip install -e .
+3) pip install -r requirements.txt
+   (this will install numpy, getkey and termcolor)
 
-The hp-35 command should then work from anywhere.
+4) pip install -e .
+
+The hp35 command should then work from anywhere.
 
 To remove:
 
-pip uninstall hp-35
+pip uninstall hp35
 
-Use hp-35 --help for more info.  Also refer to the documentation file 'hp-35_emulator.pdf'
+Use hp35 --help for more info.  Also refer to the documentation file 'hp-35_emulator.pdf'
 
 
-Python libraries required (install with 'pip install <library_name>'):
+Python libraries required:
 
 numpy
 getkey
