@@ -223,7 +223,12 @@ def get_cmd(choice):
     legal_key = False
     a_number = False
     while not legal_key:
-        choice = input('> ')
+        try:
+            choice = input('> ')
+            # Special trap for EOF (ctrl-d)
+        except EOFError:
+            pass
+
         choice = str(choice)
         if choice == 'pi':
             choice = '3.141592654    '
