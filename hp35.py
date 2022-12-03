@@ -144,8 +144,8 @@ def show_calc(display, disp_col, valid_number, off):
     spaced_chars = ' '.join(led_display)
     print("┌--------------------------------------┐")
     if display != 'wink':
-        vertical_1 = '|     '
-        vertical_2 = '    |'
+        vertical_1 = '|    '
+        vertical_2 = '     |'
         print(vertical_1, end='')
         cprint(spaced_chars, disp_col, attrs=['bold'], end='')
         print(vertical_2)
